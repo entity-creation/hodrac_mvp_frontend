@@ -16,7 +16,7 @@ export default function ContactUsPage() {
           <div id="text">
             <h2 className="pl-5">Get in touch</h2>
             <p className="label-1 pl-5">Email</p>
-            <p className="pl-5">hodrac@gmail.com</p>
+            <p className="pl-5">hodrachq@gmail.com</p>
             <p className="label-1 pl-5">Phone</p>
             <p className="pl-5">+16472810613</p>
             <p className="label-1 pl-5">Follow Us</p>
