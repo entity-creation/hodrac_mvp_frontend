@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@utility hover-sm {
+  @apply transition-all duration-200 ease-out hover:-translate-y-0.5 
+  transform hover:text-gray-900 cursor-pointer;
+}
+
+@utility label-1{
+  @apply text-sm text-black/40
+}
