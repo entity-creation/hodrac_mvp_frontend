@@ -32,7 +32,7 @@ export default function WishlistPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className="flex-grow flex flex-col"
+            className="grow flex flex-col"
           >
             {/* Each section should internally handle its own responsive padding */}
             <WishlistHeroSection wishlist={wishlist!} />

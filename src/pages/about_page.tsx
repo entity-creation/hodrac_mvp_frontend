@@ -22,7 +22,7 @@ export default function AboutPage() {
 
       <div className="bg-black text-gray-800">
         {/* HERO */}
-        <section className="relative min-h-[60vh] md:h-[500px] flex items-center justify-center text-white">
+        <section className="relative min-h-[60vh] md:h-125 flex items-center justify-center text-white">
           <motion.img
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -151,7 +151,7 @@ function Section({ title, text, image, reverse }: { title: string; text: string;
       </motion.div>
 
       <motion.div variants={fadeIn}>
-        <img src={image} alt={title} className="rounded-[2.5rem] h-80 md:h-[500px] w-full object-cover shadow-2xl" />
+        <img src={image} alt={title} className="rounded-[2.5rem] h-80 md:h-125 w-full object-cover shadow-2xl" />
       </motion.div>
     </motion.div>
   );
