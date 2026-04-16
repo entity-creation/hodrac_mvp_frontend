@@ -14,3 +14,16 @@ export async function APIClient(endpoint: string, options?: {}){
     }
     throw new Error("Api Request Failed");
 }
+
+export async function APIClientCreate(endpoint: string, body: any, options?: {}){
+    const response = await axios.post(`${baseUrl}${endpoint}`, body, {
+        headers: {
+            "Content-Type": "application/json"
+        },
+        ...options
+    });
+    if(response.status == 200){
+        return response;
+    }
+    throw new Error("Api Request Failed");
+}

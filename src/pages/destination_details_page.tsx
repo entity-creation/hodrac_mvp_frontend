@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { ClientDescription } from "../models/description_client";
 import {
   TravelSeasonLabels,
   type TravelPeriod,
 } from "../models/travel_periods";
 import NavBar from "../components/landingPage/nav_bar";
+import Footer from "../components/landingPage/footer";
 
 export default function DestinationDetailsPage() {
   const locationHook = useLocation();
@@ -22,15 +23,10 @@ export default function DestinationDetailsPage() {
     timeZone,
     languages,
     cities,
-  } = locationHook.state;
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  } = locationHook.state || {};
 
-  const goToDestination = (name: string) => {
-    navigate(`/destination/${name}`, {
-      state: { destinationName: name },
-    });
-  };
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("Overview");
 
   const tabs = [
     "Overview",
@@ -38,164 +34,181 @@ export default function DestinationDetailsPage() {
     "Directions",
     "What To Know",
     "Things To Be Wary Of",
-    "hidden Cost",
+    "Hidden Cost",
   ];
 
-  const priceArray = (priceRange as string).split("-");
+  const priceArray = (priceRange as string)?.split("-") || ["0", "0"];
+
+  const goToDestination = (name: string) => {
+    navigate(`/destination/${name}`, {
+      state: { destinationName: name },
+    });
+  };
 
   return (
-   <div className="w-screen h-screen overflow-x-hidden bg-white py-5 px-10">
-    <NavBar/>
-     <div className="mx-auto px-6 py-10 text-black">
-      {/* HERO SECTION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* IMAGE */}
-        <div>
-          <img
-            src={titleImage}
-            className="w-full h-105 object-cover rounded-xl"
-          />
-
-          {/* Thumbnails (optional future images) */}
-          <div className="flex gap-3 mt-4">
-            <img
-              src={titleImage}
-              className="w-20 h-20 rounded-lg object-cover border"
-            />
-          </div>
-        </div>
-
-        {/* DESTINATION INFO */}
-        <div className="flex flex-col gap-4">
-          <h1 className="text-3xl font-bold">{title}</h1>
-
-          <p className="text-gray-500">{title}</p>
-
-          {/* TAGS */}
-          <div className="flex flex-wrap gap-2">
-            {(tags as string[]).map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(categories as string[]).map((category) => (
-              <span
-                key={category}
-                className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-full"
-              >
-                {category}
-              </span>
-            ))}
-          </div>
-
-          {/* META INFO */}
-          <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-            <div>
-              <p className="text-gray-500">Best Period</p>
-              <p className="font-medium">
-                {bestTimeToVisit
-                  .map((item: TravelPeriod) => TravelSeasonLabels[item])
-                  .join(", ")}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">Cost Range</p>
-              <p className="font-medium">{`$${priceArray[0]} - $${priceArray[1]}`}</p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">Safety Level</p>
-              <p className="font-medium">{safetyLevels}/10</p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">Timezone</p>
-              <p className="font-medium">{timeZone}</p>
-            </div>
-          </div>
-
-          {/* EXTRA INFO */}
-          <div className="mt-6 space-y-3 text-sm">
-            <div>
-              <span className="font-semibold">Languages: </span>
-              {languages.join(", ")}
-            </div>
-
-            <div>
-              <span className="font-semibold">Currencies: </span>
-              {currency.join(", ")}
-            </div>
-
-            <div>
-              <span className="font-semibold">Cities: </span>
-              {cities.join(", ")}
-            </div>
-          </div>
-        </div>
+    <div className="w-full min-h-screen overflow-x-hidden bg-white">
+      <div className="py-5 px-4 md:px-10">
+        <NavBar />
       </div>
 
-      {/* TABS */}
-      <div className="mt-12 border-b flex gap-6 text-sm font-medium pb-5">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 capitalize ${
-              activeTab === tab
-                ? "border-b-2 text-white"
-                : "text-gray-500"
-            }`}
+      <motion.main 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-10 text-black"
+      >
+        {/* HERO SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* IMAGE GALLERY AREA */}
+          <motion.div 
+            initial={{ x: -30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="flex flex-col gap-4"
           >
-            {tab}
-          </button>
-        ))}
-      </div>
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl">
+              <img
+                src={titleImage}
+                alt={title}
+                className="w-full h-75 md:h-125 object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            </div>
 
-      {/* TAB CONTENT */}
-      <div className="mt-6 text-gray-700 leading-relaxed max-w-3xl">
-        {activeTab === "Overview" && <p>{description?.overview}</p>}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {[titleImage].map((img, i) => (
+                <img
+                  key={i}
+                  src={img}
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border-2 border-transparent hover:border-purple-500 cursor-pointer transition-all"
+                />
+              ))}
+            </div>
+          </motion.div>
 
-        {activeTab === "Local Perspective" && (
-          <p>{description?.localPerspective}</p>
-        )}
+          {/* DESTINATION INFO */}
+          <motion.div 
+            initial={{ x: 30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="flex flex-col gap-6"
+          >
+            <div>
+              <h1 className="text-4xl md:text-5xl font-extrabold mb-2">{title}</h1>
+              <p className="text-purple-600 font-medium tracking-wide uppercase text-sm">{cities?.[0] || 'Explore Destination'}</p>
+            </div>
 
-        {activeTab === "Directions" && <p>{description?.directions}</p>}
+            {/* TAGS CLOUD */}
+            <div className="flex flex-wrap gap-2">
+              {[...tags, ...categories].map((item, idx) => (
+                <span
+                  key={idx}
+                  className="px-4 py-1.5 bg-purple-50 text-purple-700 text-xs font-bold rounded-full border border-purple-100"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
 
-        {activeTab === "What To Know" && <p>{description?.whatToKnow}</p>}
+            {/* QUICK STATS GRID */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-3xl">
+              <Stat label="Best Period" value={bestTimeToVisit?.map((item: TravelPeriod) => TravelSeasonLabels[item]).join(", ")} />
+              <Stat label="Cost Range" value={`$${priceArray[0]} - $${priceArray[1]}`} />
+              <Stat label="Safety Level" value={`${safetyLevels}/10`} />
+              <Stat label="Timezone" value={timeZone} />
+            </div>
 
-        {activeTab === "Things To Be Wary Of" && (
-          <p>{description?.thingsToBeWaryOf}</p>
-        )}
+            {/* EXTRA INFO BITS */}
+            <div className="space-y-4 pt-4 border-t border-gray-100 text-sm">
+              <p><span className="text-gray-400 font-medium">Languages:</span> {languages?.join(", ")}</p>
+              <p><span className="text-gray-400 font-medium">Currencies:</span> {currency?.join(", ")}</p>
+              <p><span className="text-gray-400 font-medium">Major Cities:</span> {cities?.join(", ")}</p>
+            </div>
+          </motion.div>
+        </div>
 
-        {activeTab === "hiddenCost" && <p>{description?.hiddenCost}</p>}
-      </div>
-
-      {/* NEARBY COMPLEMENTS */}
-      <div className="mt-14">
-        <h2 className="text-xl font-semibold mb-4">Nearby Complements</h2>
-
-        <div className="flex flex-wrap gap-3">
-          {(description as ClientDescription)?.nearbyComplements.map(
-            (place) => (
+        {/* TAB NAVIGATION */}
+        <div className="mt-16 relative">
+          <div className="flex gap-8 overflow-x-auto pb-4 border-b border-gray-100 scrollbar-hide no-scrollbar">
+            {tabs.map((tab) => (
               <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`relative whitespace-nowrap text-sm font-bold transition-colors ${
+                  activeTab === tab ? "text-purple-600" : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                {tab}
+                {activeTab === tab && (
+                  <motion.div 
+                    layoutId="activeTab"
+                    className="absolute -bottom-4.25 left-0 right-0 h-1 bg-purple-600 rounded-full" 
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ANIMATED TAB CONTENT */}
+        <div className="mt-10 min-h-75">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="prose prose-purple max-w-none text-gray-700 leading-relaxed"
+            >
+              {getContent(activeTab, description)}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* NEARBY SECTION */}
+        <div className="mt-20 pt-10 border-t border-gray-100">
+          <h2 className="text-2xl font-bold mb-6">Nearby Complements</h2>
+          <div className="flex flex-wrap gap-4">
+            {description?.nearbyComplements?.map((place: string) => (
+              <motion.button
                 key={place}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => goToDestination(place)}
-                className="px-4 py-2 border rounded-lg hover:bg-purple-50 transition"
+                className="px-6 py-3 text-gray-400 bg-white border border-gray-200 rounded-2xl font-semibold hover:border-purple-500 hover:text-purple-600 transition-all shadow-sm"
               >
                 {place}
-              </button>
-            ),
-          )}
+              </motion.button>
+            ))}
+          </div>
         </div>
-      </div>
+      </motion.main>
+      <Footer />
     </div>
-   </div>
   );
+}
+
+// Helper Components & Logic
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400">{label}</span>
+      <span className="font-bold text-gray-900 line-clamp-1">{value}</span>
+    </div>
+  );
+}
+
+function getContent(activeTab: string, description: any) {
+  const keyMap: Record<string, string> = {
+    "Overview": "overview",
+    "Local Perspective": "localPerspective",
+    "Directions": "directions",
+    "What To Know": "whatToKnow",
+    "Things To Be Wary Of": "thingsToBeWaryOf",
+    "Hidden Cost": "hiddenCost"
+  };
+
+  const content = description?.[keyMap[activeTab]];
+  if (!content) return <p className="italic text-gray-400">No information available.</p>;
+
+  return content.split(/\n|\t/).map((text: string, index: number) => (
+    <p key={index} className="mb-4">{text}</p>
+  ));
 }

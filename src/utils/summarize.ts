@@ -8,10 +8,19 @@ export function summarizeText(text: string){
     }
 }
 
-export function summarizeArray(array: any[]){
+export function summarizeArray(array: any[], endIndex: number){
     const arrayLength = array.length;
-    if(arrayLength > 4){
-        return array.slice(0, 4);
+    if(arrayLength > endIndex){
+        return array.slice(0, endIndex);
     }
     else return array;
+}
+
+export function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")        // spaces → hyphens
+    .replace(/[^\w-]+/g, "")     // remove special chars
+    .replace(/--+/g, "-");       // collapse multiple hyphens
 }

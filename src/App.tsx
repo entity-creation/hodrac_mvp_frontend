@@ -7,6 +7,7 @@ import ExploreTripsPage from "./pages/explore_trips_page";
 import { ROUTES } from "./utils/routes";
 import DestinationDetailsPage from "./pages/destination_details_page";
 import AboutPage from "./pages/about_page";
+import WishlistPage from "./pages/WishlistPage";
 
 function App() {
   return (
@@ -20,7 +21,11 @@ function App() {
           element={<ExploreTripsPage />}
         />
         <Route
-          path={ROUTES.PUBLIC.DESTINATIONDETAILS}
+          path={`${ROUTES.PUBLIC.WISHLIST}/:id/:name`}
+          element={<WishlistPage />}
+        />
+        <Route
+          path={`${ROUTES.PUBLIC.DESTINATIONDETAILS}/:title`}
           element={<DestinationDetailsPage />}
         />
         <Route path={ROUTES.PUBLIC.ABOUT} element={<AboutPage />} />
