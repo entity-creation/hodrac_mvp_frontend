@@ -21,8 +21,9 @@ function DestinationCard({ destination }: { destination: DestinationClientView }
   const navigate = useNavigate();
 
   const goToDetails = () => {
-      navigate(`${ROUTES.PUBLIC.DESTINATIONDETAILS}/${slugify(destination.destinationName)}`, {
+      navigate(`${ROUTES.PUBLIC.DESTINATIONDETAILS}/${destination.destinationId}/${slugify(destination.destinationName)}`, {
         state: {
+          id: destination.destinationId,
           titleImage: destination.destinationImage,
           title: destination.destinationName,
           location: destination.countryName,
@@ -91,7 +92,6 @@ function DestinationCard({ destination }: { destination: DestinationClientView }
 }
 
 export function DestinationsSection({wishlist}: DestinationProps) {
-  console.log(wishlist)
   return (
     <section className="py-16 md:py-24 px-6 md:px-12 lg:px-20">
       <div className="mx-auto max-w-7xl">

@@ -24,3 +24,10 @@ export function slugify(text: string) {
     .replace(/[^\w-]+/g, "")     // remove special chars
     .replace(/--+/g, "-");       // collapse multiple hyphens
 }
+
+export function unslugify(slug: string) {
+  return slug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}

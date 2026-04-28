@@ -131,7 +131,7 @@ export function Wishlists({ name, description, image, id, index }: Props & { ind
 function WishlistSkeleton() {
   return (
     <div className="flex flex-col w-full max-w-[320px] animate-pulse">
-      <div className="aspect-[4/3] w-full rounded-2xl bg-gray-200" />
+      <div className="aspect-4/3 w-full rounded-2xl bg-gray-200" />
       <div className="mt-4 space-y-2">
         <div className="h-5 w-3/4 bg-gray-200 rounded-md" />
         <div className="h-4 w-full bg-gray-200 rounded-md" />

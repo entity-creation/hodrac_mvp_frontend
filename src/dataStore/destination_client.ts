@@ -23,3 +23,14 @@ export async function getDestinationByQuery(query: FilterQuery){
         return [];
     }
 }
+
+export async function getDestinationById(id: string){
+    try{
+        const response = await APIClient(`/api/destination/get-by-id/${id}`);
+        return response.data as DestinationClient;
+    }
+    catch(ex){
+        console.log(ex);
+        return null;
+    }
+}

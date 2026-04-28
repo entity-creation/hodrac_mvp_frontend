@@ -43,16 +43,17 @@ export default function Footer() {
 
             <div className="flex flex-col gap-4 text-white/80">
               {[
-                "About",
-                "Explore",
-                "Popular Trips",
-                "How it Works",
+                {label: "About", path: ROUTES.PUBLIC.ABOUT},
+                {label: "Explore", path: ROUTES.PUBLIC.EXPLORETRIPS},
+                {label: "Popular Trips", path: "/#top-countries"},
+                {label: "How it Works", path: "/#how-it-works"},
               ].map((item) => (
                 <p
-                  key={item}
+                  key={item.label}
                   className="hover:text-white transition-colors duration-300 cursor-pointer"
+                  onClick={() => navigate(item.path)}
                 >
-                  {item}
+                  {item.label}
                 </p>
               ))}
 

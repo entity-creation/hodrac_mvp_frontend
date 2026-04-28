@@ -2,6 +2,7 @@ import type { ClientDescription } from "./description_client";
 import type { TravelPeriod } from "./travel_periods";
 
 export type DestinationClient = {
+    destinationId: string;
     destinationName: string,
     destinationImage: string,
     description: string,
@@ -19,6 +20,7 @@ export type DestinationClient = {
 
 
 export type DestinationClientView = {
+    destinationId: string;
     destinationName: string,
     destinationImage: string,
     description: ClientDescription | null,

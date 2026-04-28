@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../utils/routes";
 
 interface TripProps {
+  id: string;
   titleImage: string;
   title: string;
   location: string;
@@ -29,7 +30,7 @@ export default function TripCard(props: TripProps) {
   const navigate = useNavigate();
 
   const goToDetails = () => {
-    navigate(`${ROUTES.PUBLIC.DESTINATIONDETAILS}/${slugify(title)}`, {
+    navigate(`${ROUTES.PUBLIC.DESTINATIONDETAILS}/${props.id}/${slugify(title)}`, {
       state: { ...props },
     });
   };

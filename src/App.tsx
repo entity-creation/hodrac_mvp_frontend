@@ -25,7 +25,7 @@ function App() {
           element={<WishlistPage />}
         />
         <Route
-          path={`${ROUTES.PUBLIC.DESTINATIONDETAILS}/:title`}
+          path={`${ROUTES.PUBLIC.DESTINATIONDETAILS}/:id/:name`}
           element={<DestinationDetailsPage />}
         />
         <Route path={ROUTES.PUBLIC.ABOUT} element={<AboutPage />} />

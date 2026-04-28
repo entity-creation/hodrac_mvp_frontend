@@ -31,7 +31,7 @@ export default function ExploreTripsPage() {
     }
   );
 
-  const { destinations, desLoading } = useDestination(filters);
+  const { destinations, loading } = useDestination({query: filters});
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-white overflow-x-hidden">
@@ -45,7 +45,7 @@ export default function ExploreTripsPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Available Destinations
           </h2>
-          {desLoading ? (
+          {loading ? (
             <div className="h-6 w-48 bg-gray-100 animate-pulse rounded" />
           ) : (
             <p className="text-gray-500">
@@ -55,7 +55,7 @@ export default function ExploreTripsPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {desLoading ? (
+          {loading ? (
             /* SKELETON GRID */
             <motion.div
               key="loader"
@@ -86,6 +86,7 @@ export default function ExploreTripsPage() {
                   }}
                 >
                   <TripCard
+                    id={trip.destinationId}
                     title={trip.destinationName}
                     titleImage={trip.destinationImage}
                     location={trip.countryName}
@@ -107,7 +108,7 @@ export default function ExploreTripsPage() {
           )}
         </AnimatePresence>
 
-        {!desLoading && destinations.length === 0 && (
+        {!loading && destinations.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
