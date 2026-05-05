@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -10,9 +10,7 @@ import Footer from "../components/landingPage/footer";
 import { Button } from "../components/wishlist/ui/button";
 import { Copy } from "lucide-react";
 import useDestination from "../hooks/use_destinations";
-import { type DestinationClientView } from "../models/destination_client";
 import type { ClientDescription } from "../models/description_client";
-import { unslugify } from "../utils/summarize";
 
 export default function DestinationDetailsPage() {
   const locationHook = useLocation();
