@@ -572,7 +572,7 @@ export default function WishlistDetailPage() {
                   </p>
                 )}
 
-                {/* Lock price button */}
+                {/* Lock price button
                 {!wishlist.activePricingSnapshot && (
                   <Button
                     variant="outline"
@@ -582,7 +582,7 @@ export default function WishlistDetailPage() {
                   >
                     🔒 Lock this price
                   </Button>
-                )}
+                )} */}
 
                 {/* Fork CTA */}
                 <Button
