@@ -161,7 +161,7 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
               </span>
             )}
           </div>
-          <p className="font-semibold text-gray-900 text-sm mt-0.5">{item.title}</p>
+          <p className="font-semibold text-gray-300 text-sm mt-0.5">{item.title}</p>
           {item.costModifier > 0 && (
             <p className="text-xs text-emerald-600 font-medium mt-0.5">+${item.costModifier.toLocaleString()}</p>
           )}
@@ -203,7 +203,7 @@ function ItineraryDayCard({ day }: { day: ItineraryDay }) {
             {day.dayNumber}
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm">{day.dayTitle}</p>
+            <p className="font-bold text-gray-300 text-sm">{day.dayTitle}</p>
             <p className="text-xs text-gray-400">
               {[day.morningCity, day.afternoonCity, day.eveningCity]
                 .filter(Boolean)
