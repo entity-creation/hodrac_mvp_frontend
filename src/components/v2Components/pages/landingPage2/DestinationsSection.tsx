@@ -99,7 +99,7 @@ export default function DestinationsSection() {
                   {/* Save button */}
                   <button
                     onClick={e => { e.stopPropagation(); toggleDestination(dest.destinationId); }}
-                    className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    className={`p-0! absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                       isDestinationSaved(dest.destinationId)
                         ? "bg-red-100 text-red-500"
                         : "bg-white/80 text-gray-400 hover:bg-red-50 hover:text-red-400 backdrop-blur-sm"
@@ -157,7 +157,7 @@ export default function DestinationsSection() {
         >
           <button
             onClick={() => navigate(ROUTES.PUBLIC.EXPLOREDESTINATION)}
-            className="inline-flex items-center gap-2 px-7 py-3.5 border-2 border-gray-900 text-gray-900 text-sm font-bold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-200"
+            className="inline-flex items-center gap-2 px-7 py-3.5 border-2 border-gray-900 text-gray-200 text-sm font-bold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-200"
           >
             Explore all destinations →
           </button>

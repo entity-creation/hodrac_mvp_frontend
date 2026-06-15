@@ -142,8 +142,8 @@ export default function SearchResultsPage() {
                 onClick={() => setActiveTab(tab.key as typeof activeTab)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   activeTab === tab.key
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white text-gray-400 shadow-sm"
+                    : "text-gray-200 hover:text-gray-700"
                 }`}
               >
                 {tab.label}
@@ -156,13 +156,13 @@ export default function SearchResultsPage() {
         {loading && (
           <div className="flex flex-col gap-10">
             <div>
-              <p className="text-sm font-semibold text-gray-400 mb-4">Wishlists</p>
+              <p className="text-sm font-semibold text-gray-200 mb-4">Wishlists</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => <WishlistCardSkeleton key={i} />)}
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-400 mb-4">Destinations</p>
+              <p className="text-sm font-semibold text-gray-200 mb-4">Destinations</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => <DestinationCardSkeleton key={i} />)}
               </div>
@@ -181,7 +181,7 @@ export default function SearchResultsPage() {
                 <button onClick={() => navigate("/explore/wishlists")} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full">
                   Browse wishlists
                 </button>
-                <button onClick={() => navigate("/explore/destinations")} className="px-5 py-2.5 border-2 border-gray-900 text-gray-900 text-sm font-semibold rounded-full">
+                <button onClick={() => navigate("/explore/destinations")} className="px-5 py-2.5 border-2 border-gray-900 text-gray-400 text-sm font-semibold rounded-full">
                   Browse destinations
                 </button>
               </div>
@@ -203,7 +203,7 @@ export default function SearchResultsPage() {
                     Wishlists
                   </p>
                   {activeTab === "all" && (
-                    <button onClick={() => setActiveTab("wishlists")} className="text-sm text-gray-400 hover:text-gray-700">
+                    <button onClick={() => setActiveTab("wishlists")} className="text-sm text-gray-300 hover:text-gray-700">
                       See all →
                     </button>
                   )}

@@ -131,7 +131,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete }: Pe
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-500"
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-400"
             >
               ✕
             </button>
@@ -159,7 +159,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete }: Pe
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 text-sm font-medium transition-all duration-150 ${
                     isSelected
                       ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-200 text-gray-700 hover:border-gray-400"
+                      : "border-gray-200 text-gray-500 hover:border-gray-400"
                   }`}
                 >
                   <span>{opt.emoji}</span>

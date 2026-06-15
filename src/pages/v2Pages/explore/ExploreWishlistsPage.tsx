@@ -102,7 +102,7 @@ useWishlistSignalR(
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-medium transition-all ${
                 isPersonaTagActive(tag)
                   ? "border-gray-900 bg-gray-900 text-white"
-                  : "border-gray-200 text-gray-700 bg-white hover:border-gray-400"
+                  : "border-gray-200 text-gray-400 bg-white hover:border-gray-400"
               }`}
             >
               <span>{tag.emoji}</span>

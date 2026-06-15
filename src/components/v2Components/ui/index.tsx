@@ -39,7 +39,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`p-0! ${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className}`}
     >
       {loading && (
         <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -177,7 +177,7 @@ export function SaveButton({
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={e => { e.stopPropagation(); e.preventDefault(); onToggle(); }}
-      className={`${s} rounded-full flex items-center justify-center transition-all duration-200 ${
+      className={`p-0! ${s} rounded-full flex items-center justify-center transition-all duration-200 ${
         saved ? "bg-red-100 text-red-500" : "bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400"
       }`}
     >

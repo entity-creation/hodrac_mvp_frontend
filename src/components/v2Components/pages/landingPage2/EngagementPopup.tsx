@@ -84,7 +84,7 @@ export default function EngagementPopup({
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="py-3 rounded-xl bg-white text-gray-900 text-sm font-bold hover:bg-gray-100 active:scale-95 transition-all duration-150"
+                    className="py-3 rounded-xl bg-white text-gray-300 text-sm font-bold hover:bg-gray-100! active:scale-95 transition-all duration-150"
                   >
                     {loading ? "Joining..." : "Join Early Access →"}
                   </button>

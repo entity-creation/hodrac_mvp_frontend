@@ -100,7 +100,7 @@ export function DestinationFilterPanel({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-900 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-200 hover:border-gray-900 transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -200,7 +200,7 @@ export function DestinationFilterPanel({
                       className={`w-9 h-9 rounded-full text-sm font-bold border-2 transition-all ${
                         filters.minLuxury === n
                           ? "border-amber-400 bg-amber-50 text-amber-600"
-                          : "border-gray-200 text-gray-500 hover:border-gray-400"
+                          : "border-gray-200 text-gray-200 hover:border-gray-400"
                       }`}
                     >
                       {n}
@@ -220,7 +220,7 @@ export function DestinationFilterPanel({
                       className={`w-9 h-9 rounded-full text-sm font-bold border-2 transition-all ${
                         filters.maxSafetyLevel === n
                           ? "border-emerald-400 bg-emerald-50 text-emerald-600"
-                          : "border-gray-200 text-gray-500 hover:border-gray-400"
+                          : "border-gray-200 text-gray-200 hover:border-gray-400"
                       }`}
                     >
                       {n}
@@ -277,7 +277,7 @@ export function WishlistFilterPanel({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-900 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-200 hover:border-gray-900 transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -311,7 +311,7 @@ export function WishlistFilterPanel({
 
               {/* Vibe tags */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Trip Vibe</p>
+                <p className="text-xs font-semibold text-gray-200 uppercase tracking-wider mb-3">Trip Vibe</p>
                 <div className="flex flex-wrap gap-2">
                   {options.tags.map(tag => (
                     <Chip key={tag.key} label={tag.tagName} active={selectedVibes.includes(tag.tagName)} onClick={() => toggleVibe(tag.tagName)} />

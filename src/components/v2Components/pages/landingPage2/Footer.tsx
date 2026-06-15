@@ -92,7 +92,7 @@ export default function Footer() {
                 <button
                   onClick={handleJoin}
                   disabled={loading}
-                  className="px-5 py-3 rounded-xl bg-white text-gray-900 text-sm font-bold hover:bg-gray-100 active:scale-95 transition-all whitespace-nowrap"
+                  className="px-5 py-3 rounded-xl bg-white text-gray-300 text-sm font-bold hover:bg-gray-100 active:scale-95 transition-all whitespace-nowrap"
                 >
                   {loading ? "Joining..." : "Join →"}
                 </button>

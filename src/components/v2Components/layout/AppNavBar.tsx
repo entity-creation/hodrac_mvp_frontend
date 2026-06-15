@@ -53,8 +53,8 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
 
   const isActive = (path: string) =>
     location.pathname.startsWith(path)
-      ? "text-gray-900 font-semibold"
-      : "text-gray-500 hover:text-gray-900";
+      ? "text-gray-300 font-semibold"
+      : "text-gray-200 hover:text-gray-300";
 
   const NAV_LINKS = [
     { label: "For You",      action: onForYouClick ?? (() => {}) },
@@ -75,7 +75,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
           {/* Logo */}
           <button
             onClick={() => navigate(ROUTES.PUBLIC.HOME)}
-            className="text-xl font-black tracking-tight text-gray-900 hover:opacity-70 transition-opacity shrink-0"
+            className="text-xl font-black tracking-tight text-gray-200 hover:opacity-70 transition-opacity shrink-0"
             style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
           >
             Hodrac
@@ -106,7 +106,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
             {/* Search button */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+              className="p-0! w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-200 transition-colors"
               aria-label="Search"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,7 +119,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                 {/* Saved */}
                 <button
                   onClick={() => navigate(ROUTES.AUTH.SAVED)}
-                  className="hidden md:flex w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-600 transition-colors"
+                  className="p-0! hidden md:flex w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-200 transition-colors"
                   aria-label="Saved"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -145,7 +145,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                         className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden"
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{user?.displayName}</p>
+                          <p className="text-sm font-semibold text-gray-200 truncate">{user?.displayName}</p>
                           <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                         </div>
                         {[
@@ -155,7 +155,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                           <button
                             key={item.path}
                             onClick={() => { navigate(item.path); setUserMenuOpen(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
                           >
                             <span>{item.icon}</span>
                             {item.label}
@@ -179,7 +179,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
               <div className="hidden md:flex items-center gap-2">
                 <button
                   onClick={() => navigate(ROUTES.PUBLIC.LOGIN)}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 transition-colors"
+                  className="text-sm font-medium text-gray-400 hover:text-gray-600 px-3 py-2 transition-colors"
                 >
                   Sign In
                 </button>
@@ -198,9 +198,9 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
               onClick={() => setMobileOpen(o => !o)}
             >
               <div className="w-5 flex flex-col gap-1.5">
-                <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
-                <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
-                <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
+                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
+                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-2" : ""}`} />
               </div>
             </button>
           </div>
@@ -213,7 +213,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
               <button
                 key={link.label}
                 onClick={() => { link.action(); setMobileOpen(false); }}
-                className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl transition-colors"
               >
                 {link.label}
               </button>
@@ -222,10 +222,10 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
             <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2">
               {isAuthenticated ? (
                 <>
-                  <button onClick={() => navigate(ROUTES.AUTH.MYWISHLIST)} className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
+                  <button onClick={() => navigate(ROUTES.AUTH.MYWISHLIST)} className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl">
                     🗺️ My Wishlists
                   </button>
-                  <button onClick={() => navigate(ROUTES.AUTH.SAVED)} className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
+                  <button onClick={() => navigate(ROUTES.AUTH.SAVED)} className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl">
                     ❤️ Saved
                   </button>
                   <button onClick={async () => { await logout(); navigate(ROUTES.PUBLIC.HOME); }} className="text-left px-3 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl">
@@ -234,7 +234,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                 </>
               ) : (
                 <>
-                  <button onClick={() => navigate(ROUTES.PUBLIC.LOGIN)} className="w-full text-sm font-semibold text-gray-900 bg-gray-100 py-3 rounded-xl">
+                  <button onClick={() => navigate(ROUTES.PUBLIC.LOGIN)} className="w-full text-sm font-semibold text-gray-400 bg-gray-100 py-3 rounded-xl">
                     Sign In
                   </button>
                   <button onClick={() => navigate(ROUTES.PUBLIC.REGISTER)} className="w-full text-sm font-semibold text-white bg-gray-900 py-3 rounded-xl">
@@ -264,7 +264,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
               className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden"
             >
               <form onSubmit={handleSearch} className="flex items-center gap-3 p-4">
-                <svg className="text-gray-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="p-0! text-gray-300 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
                 <input
@@ -273,12 +273,12 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search destinations, wishlists, or travel styles..."
-                  className="flex-1 text-gray-800 bg-transparent outline-none text-base placeholder-gray-400"
+                  className="flex-1 text-gray-300 bg-transparent outline-none text-base placeholder-gray-400"
                 />
                 <button
                   type="button"
                   onClick={() => setSearchOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors text-xs"
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors text-xs"
                 >
                   ✕
                 </button>
@@ -292,7 +292,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                     <button
                       key={s}
                       onClick={() => { navigate(`${ROUTES.PUBLIC.SEARCH}?q=${encodeURIComponent(s)}`); setSearchOpen(false); }}
-                      className="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-600 hover:bg-gray-200 transition-colors"
+                      className="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-300 hover:bg-gray-200 transition-colors"
                     >
                       {s}
                     </button>

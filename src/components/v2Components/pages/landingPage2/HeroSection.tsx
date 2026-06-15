@@ -251,7 +251,7 @@ export default function HeroSection({ personalization, onPersonalizeClick }: Her
               <button
                 key={t.phrase}
                 onClick={() => handleTagClick(t.phrase)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm transition-all duration-150"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-300 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm transition-all duration-150"
               >
                 🔍 {t.phrase}
               </button>
@@ -269,7 +269,7 @@ export default function HeroSection({ personalization, onPersonalizeClick }: Her
               <button
                 key={tag.label}
                 onClick={() => handleTagClick(tag.label)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm transition-all duration-150"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-300 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm transition-all duration-150"
               >
                 <span>{tag.emoji}</span>
                 <span>{tag.label}</span>

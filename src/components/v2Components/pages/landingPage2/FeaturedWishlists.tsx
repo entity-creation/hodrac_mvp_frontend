@@ -69,7 +69,7 @@ function WishlistFeatureCard({
           <span className="text-3xl">{emoji}</span>
           <button
             onClick={e => { e.stopPropagation(); onToggleSave(); }}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+            className={`p-0! w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
               saved ? "bg-red-100 text-red-500" : "bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400"
             }`}
           >
@@ -243,7 +243,7 @@ export default function FeaturedWishlistsSection({ personalization, userId }: Fe
         >
           <button
             onClick={() => navigate(ROUTES.PUBLIC.EXPLOREWISHLIST)}
-            className="inline-flex items-center gap-2 px-7 py-3.5 border-2 border-gray-900 text-gray-900 text-sm font-bold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-200"
+            className="inline-flex items-center gap-2 px-7 py-3.5 border-2 border-gray-900 text-gray-200 text-sm font-bold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-200"
           >
             Explore all wishlists →
           </button>

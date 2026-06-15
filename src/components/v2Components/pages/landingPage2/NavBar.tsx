@@ -53,7 +53,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
         {/* Logo */}
         <button
           onClick={() => navigate(ROUTES.PUBLIC.HOME)}
-          className="text-xl font-black tracking-tight text-gray-900 hover:opacity-70 transition-opacity"
+          className="text-xl font-black tracking-tight text-gray-200 hover:opacity-70 transition-opacity"
           style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
         >
           Hodrac
@@ -68,7 +68,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
               className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
                 link.label === "For You"
                   ? "bg-gray-900 text-white hover:bg-gray-700"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  : "text-gray-300 hover:text-gray-200 hover:bg-gray-100"
               }`}
             >
               {link.label}
@@ -83,7 +83,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
               {/* Saved trips */}
               <button
                 onClick={() => navigate(ROUTES.AUTH.SAVED)}
-                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-0! flex items-center gap-1.5 text-sm text-gray-300 hover:text-gray-200 transition-colors"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -109,8 +109,8 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
                       className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden"
                     >
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{user.displayName}</p>
-                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        <p className="text-sm font-semibold text-gray-300 truncate">{user.displayName}</p>
+                        <p className="text-xs text-gray-200 truncate">{user.email}</p>
                       </div>
                       {[
                         { label: "My Wishlists", icon: "🗺️", path: "/my-wishlists" },
@@ -119,7 +119,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
                         <button
                           key={item.path}
                           onClick={() => { navigate(item.path); setUserMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
                         >
                           <span>{item.icon}</span>{item.label}
                         </button>
@@ -141,7 +141,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
             <>
               <button
                 onClick={() => navigate(ROUTES.PUBLIC.LOGIN)}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 transition-colors"
+                className="text-sm font-medium text-gray-400 hover:text-gray-300 px-3 py-2 transition-colors"
               >
                 Sign In
               </button>
@@ -161,9 +161,9 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
           onClick={() => setMobileOpen(o => !o)}
         >
           <div className="w-5 flex flex-col gap-1.5">
-            <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
-            <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
-            <span className={`block h-0.5 bg-gray-900 transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+            <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
+            <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
+            <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-2" : ""}`} />
           </div>
         </button>
       </div>
@@ -175,7 +175,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
             <button
               key={link.label}
               onClick={() => { link.action(); setMobileOpen(false); }}
-              className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+              className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl transition-colors"
             >
               {link.label}
             </button>
@@ -183,13 +183,13 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
           <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2">
             {isAuthenticated && user ? (
               <>
-                <button onClick={() => { navigate(ROUTES.AUTH.MYWISHLIST); setMobileOpen(false); }} className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">🗺️ My Wishlists</button>
-                <button onClick={() => { navigate(ROUTES.AUTH.SAVED); setMobileOpen(false); }} className="text-left px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl">❤️ Saved Trips</button>
+                <button onClick={() => { navigate(ROUTES.AUTH.MYWISHLIST); setMobileOpen(false); }} className="text-left px-3 py-3 text-sm font-medium text-gray-300 hover:bg-gray-50 rounded-xl">🗺️ My Wishlists</button>
+                <button onClick={() => { navigate(ROUTES.AUTH.SAVED); setMobileOpen(false); }} className="text-left px-3 py-3 text-sm font-medium text-gray-300 hover:bg-gray-50 rounded-xl">❤️ Saved Trips</button>
                 <button onClick={async () => { await logout(); navigate(ROUTES.PUBLIC.HOME); }} className="text-left px-3 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl">🚪 Sign Out</button>
               </>
             ) : (
               <>
-                <button onClick={() => navigate(ROUTES.PUBLIC.LOGIN)} className="w-full text-sm font-semibold text-gray-900 bg-gray-100 py-3 rounded-xl">Sign In</button>
+                <button onClick={() => navigate(ROUTES.PUBLIC.LOGIN)} className="w-full text-sm font-semibold text-gray-400 bg-gray-100 py-3 rounded-xl">Sign In</button>
                 <button onClick={() => navigate(ROUTES.PUBLIC.REGISTER)} className="w-full text-sm font-semibold text-white bg-gray-900 py-3 rounded-xl">Get Started</button>
               </>
             )}
