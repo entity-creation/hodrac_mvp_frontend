@@ -392,8 +392,8 @@ export default function WishlistDetailPage() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       activeTab === tab.key
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "bg-white text-gray-300 shadow-sm"
+                        : "text-gray-400 hover:text-gray-700"
                     }`}
                   >
                     {tab.label}
