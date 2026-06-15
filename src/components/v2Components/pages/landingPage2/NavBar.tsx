@@ -83,7 +83,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
               {/* Saved trips */}
               <button
                 onClick={() => navigate(ROUTES.AUTH.SAVED)}
-                className="p-0! flex items-center gap-1.5 text-sm text-gray-300 hover:text-gray-200 transition-colors"
+                className="p-2! flex items-center gap-1.5 text-sm text-gray-300 hover:text-gray-200 transition-colors"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -109,8 +109,8 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
                       className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden"
                     >
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-300 truncate">{user.displayName}</p>
-                        <p className="text-xs text-gray-200 truncate">{user.email}</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">{user.displayName}</p>
+                        <p className="text-xs text-gray-700 truncate">{user.email}</p>
                       </div>
                       {[
                         { label: "My Wishlists", icon: "🗺️", path: "/my-wishlists" },
@@ -119,7 +119,7 @@ export default function NavBar({ onForYouClick, isAuthenticated, user }: NavBarP
                         <button
                           key={item.path}
                           onClick={() => { navigate(item.path); setUserMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
+                          className="mt-2 w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
                         >
                           <span>{item.icon}</span>{item.label}
                         </button>

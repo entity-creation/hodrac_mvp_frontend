@@ -119,7 +119,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                 {/* Saved */}
                 <button
                   onClick={() => navigate(ROUTES.AUTH.SAVED)}
-                  className="p-0! hidden md:flex w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-200 transition-colors"
+                  className="p-2! hidden md:flex w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-200 transition-colors"
                   aria-label="Saved"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -145,8 +145,8 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                         className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden"
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-200 truncate">{user?.displayName}</p>
-                          <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                          <p className="text-sm font-semibold text-gray-900 truncate">{user?.displayName}</p>
+                          <p className="text-xs text-gray-700 truncate">{user?.email}</p>
                         </div>
                         {[
                           { label: "My Wishlists", icon: "🗺️", path: "/my-wishlists" },
@@ -155,7 +155,7 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                           <button
                             key={item.path}
                             onClick={() => { navigate(item.path); setUserMenuOpen(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
+                            className="pt-2 w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
                           >
                             <span>{item.icon}</span>
                             {item.label}
