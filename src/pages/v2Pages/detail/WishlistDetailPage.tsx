@@ -269,7 +269,7 @@ export default function WishlistDetailPage() {
   const [forkError,  setForkError]  = useState("");
   const [activeTab,  setActiveTab]  = useState<"itinerary" | "inclusions" | "info">("itinerary");
   const [travelers,  setTravelers]  = useState(2);
-  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  // const [snapshotLoading, setSnapshotLoading] = useState(false);
 
   if (loading) return <WishlistDetailSkeleton />;
   if (error || !wishlist) return (
@@ -293,15 +293,15 @@ export default function WishlistDetailPage() {
   };
   console.log(wishlist)
 
-  const handleCreateSnapshot = async () => {
-    setSnapshotLoading(true);
-    try {
-      await wishlistsApi.createSnapshot(wishlist.wishlistId, travelers);
-      window.location.reload();
-    } finally {
-      setSnapshotLoading(false);
-    }
-  };
+  // const handleCreateSnapshot = async () => {
+  //   setSnapshotLoading(true);
+  //   try {
+  //     await wishlistsApi.createSnapshot(wishlist.wishlistId, travelers);
+  //     window.location.reload();
+  //   } finally {
+  //     setSnapshotLoading(false);
+  //   }
+  // };
 
   const totalEstimate = (wishlist.basePricePerPerson * travelers).toLocaleString();
   const TABS = [
