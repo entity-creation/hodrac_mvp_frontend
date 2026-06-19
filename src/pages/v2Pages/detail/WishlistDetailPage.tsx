@@ -142,7 +142,7 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-start gap-3 p-4 text-left"
       >
-        {item.imageUrl != null ? (
+        {item.imageUrl != null || item.imageUrl == "" ? (
           <img
             src={item.imageUrl}
             alt={item.title}
