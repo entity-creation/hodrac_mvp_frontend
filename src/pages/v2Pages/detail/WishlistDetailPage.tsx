@@ -148,7 +148,7 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
             alt={item.title}
             className="w-14 h-14 rounded-xl object-cover shrink-0"
           />
-        ): (<div className="w-14 h-14 rounded-xl object-cover shrink-0">🧳</div>)}
+        ): (<div className="w-14 h-14 rounded-xl object-cover shrink-0 object-center text-2xl">🧳</div>)}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{item.timeOfDay}</span>
