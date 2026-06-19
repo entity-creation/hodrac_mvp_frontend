@@ -142,13 +142,13 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-start gap-3 p-4 text-left"
       >
-        {item.imageUrl && (
+        {item.imageUrl != null ? (
           <img
             src={item.imageUrl}
             alt={item.title}
             className="w-14 h-14 rounded-xl object-cover shrink-0"
           />
-        )}
+        ): (<div className="w-14 h-14 rounded-xl object-cover shrink-0">🧳</div>)}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{item.timeOfDay}</span>
