@@ -5,7 +5,6 @@ import { TbBrandLinkedinFilled } from "react-icons/tb";
 import { BsYoutube, BsTwitterX } from "react-icons/bs";
 import { IoLogoInstagram } from "react-icons/io5";
 import { FaTiktok } from "react-icons/fa";
-import { ROUTES } from "../../../../utils/routes";
 import { createNewUserInfo } from "../../../../dataStore/user_info_apis";
 
 export default function Footer() {
