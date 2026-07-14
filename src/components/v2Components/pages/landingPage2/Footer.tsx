@@ -24,9 +24,9 @@ export default function Footer() {
   };
 
   const navLinks = [
-    { label: "About", path: ROUTES.PUBLIC.ABOUT },
-    { label: "Explore", path: ROUTES.PUBLIC.EXPLORETRIPS },
-    { label: "Contact", path: ROUTES.PUBLIC.CONTACTUS },
+    { label: "About", path: "#" },
+    { label: "Explore", path: "#" },
+    { label: "Contact", path: "#" },
   ];
 
   return (

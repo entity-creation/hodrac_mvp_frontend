@@ -92,6 +92,7 @@ export default function DestinationDetailPage() {
   const [similarLoading,   setSimilarLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "insights" | "practical">("overview");
 
+  console.log(dest);
   useEffect(() => {
     if (!id) return;
     wishlistsApi.destinationInWishlist(id, 4)
