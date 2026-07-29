@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { TbBrandLinkedinFilled } from "react-icons/tb";
-import { BsYoutube, BsTwitterX } from "react-icons/bs";
-import { IoLogoInstagram } from "react-icons/io5";
+// import { TbBrandLinkedinFilled } from "react-icons/tb";
+// import { BsYoutube, BsTwitterX } from "react-icons/bs";
+// import { IoLogoInstagram } from "react-icons/io5";
 import { FaTiktok } from "react-icons/fa";
 import { createNewUserInfo } from "../../../../dataStore/user_info_apis";
+import { ROUTES } from "../../../../utils/v2Utils/routes";
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -23,9 +24,32 @@ export default function Footer() {
   };
 
   const navLinks = [
-    { label: "About", path: "#" },
-    { label: "Explore", path: "#" },
-    { label: "Contact", path: "#" },
+    { label: "About", path: ROUTES.PUBLIC.ABOUT },
+    { label: "Explore", path: ROUTES.PUBLIC.EXPLOREWISHLIST },
+    { label: "Contact", path: ROUTES.PUBLIC.CONTACTUS },
+  ];
+
+  const socialLinks = [
+    {
+      icon: FaTiktok,
+      href: "https://www.tiktok.com/@hodrac",
+    },
+    // {
+    //   icon: TbBrandLinkedinFilled,
+    //   href: "https://linkedin.com/company/yourcompany",
+    // },
+    // {
+    //   icon: BsYoutube,
+    //   href: "https://youtube.com/@yourchannel",
+    // },
+    // {
+    //   icon: IoLogoInstagram,
+    //   href: "https://instagram.com/youraccount",
+    // },
+    // {
+    //   icon: BsTwitterX,
+    //   href: "https://x.com/youraccount",
+    // },
   ];
 
   return (
@@ -106,19 +130,16 @@ export default function Footer() {
             © 2025 Hodrac. All Rights Reserved.
           </p>
           <div className="flex gap-2">
-            {[
-              TbBrandLinkedinFilled,
-              BsYoutube,
-              IoLogoInstagram,
-              BsTwitterX,
-              FaTiktok,
-            ].map((Icon, i) => (
-              <button
+            {socialLinks.map(({ icon: Icon, href }, i) => (
+              <a
                 key={i}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className=" w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60! hover:text-white transition-all"
               >
                 <Icon size={14} />
-              </button>
+              </a>
             ))}
           </div>
         </div>

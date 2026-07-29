@@ -1,10 +1,9 @@
 import { motion, type Variants } from "framer-motion";
-import { BsTwitterX, BsYoutube } from "react-icons/bs";
+// import { BsTwitterX, BsYoutube } from "react-icons/bs";
 import { FaTiktok } from "react-icons/fa";
-import { IoLogoInstagram } from "react-icons/io5";
-import { TbBrandLinkedinFilled } from "react-icons/tb";
-import NavBar from "../components/landingPage/nav_bar";
-import Footer from "../components/landingPage/footer";
+// import { IoLogoInstagram } from "react-icons/io5";
+// import { TbBrandLinkedinFilled } from "react-icons/tb";
+import Footer from "../components/v2Components/pages/landingPage2/Footer";
 import { useState } from "react";
 import emailjs from "emailjs-com";
 
@@ -77,19 +76,15 @@ export default function ContactUsPage() {
       );
   };
   const socialIcons = [
-    { Icon: TbBrandLinkedinFilled, link: "#" },
-    { Icon: BsYoutube, link: "#" },
-    { Icon: IoLogoInstagram, link: "#" },
-    { Icon: BsTwitterX, link: "#" },
-    { Icon: FaTiktok, link: "#" },
+    // { Icon: TbBrandLinkedinFilled, link: "#" },
+    // { Icon: BsYoutube, link: "#" },
+    // { Icon: IoLogoInstagram, link: "#" },
+    // { Icon: BsTwitterX, link: "#" },
+    { Icon: FaTiktok, link: "https://www.tiktok.com/@hodrac" },
   ];
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-white overflow-x-hidden">
-      <div className="py-5 px-6 md:px-10">
-        <NavBar />
-      </div>
-
       <main className="grow bg-black flex justify-center items-center py-12 px-4 md:px-10">
         <motion.div
           initial="hidden"

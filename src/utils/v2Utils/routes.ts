@@ -1,12 +1,12 @@
 export const ROUTES = {
     PUBLIC: {
         HOME: "/",
-        CONTACTUS: "/contact_us",
+        CONTACTUS: "/contact-us",
         EXPLOREWISHLIST: "/explore/wishlists",
         EXPLOREDESTINATION: "/explore/destinations",
         WISHLISTBASEROUTE: "/wishlists",
         DESTINATIONBASEROUTE: "/destinations",
-        ABOUT: "/about_us",
+        ABOUT: "/about",
         SEARCH: "/search",
         LOGIN: "/auth/login",
         REGISTER: "/auth/register",

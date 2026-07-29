@@ -28,6 +28,8 @@ import SearchResultsPage from "../pages/v2Pages/search/SearchResultsPage";
 
 // Auth
 import { LoginPage, RegisterPage } from "../pages/v2Pages/auth/AuthPages";
+import ContactUsPage from "../pages/contact_us_page";
+import AboutPage from "../pages/about_page";
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
 // Pages that use the AppNavBar (everything except the landing page root)
@@ -97,6 +99,10 @@ export default function App() {
             {/* Auth */}
             <Route path="/auth/login"    element={<LoginPage />} />
             <Route path="/auth/register" element={<RegisterPage />} />
+
+            {/* Footer */}
+            <Route path="/contact-us" element={<ContactUsPage/>}/>
+            <Route path="/about" element={<AboutPage/>}/>
 
             {/* Catch-all */}
             <Route path="*" element={

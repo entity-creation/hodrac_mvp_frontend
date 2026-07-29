@@ -1,6 +1,5 @@
 import { motion, type Variants } from "framer-motion";
-import Footer from "../components/landingPage/footer";
-import NavBar from "../components/landingPage/nav_bar";
+import Footer from "../components/v2Components/pages/landingPage2/Footer";
 
 // Animation Variants
 const fadeIn: Variants = {
@@ -16,10 +15,6 @@ const staggerContainer: Variants = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen w-full bg-white overflow-x-hidden">
-      <div className="py-5 px-6 md:px-10">
-        <NavBar />
-      </div>
-
       <div className="bg-black text-gray-800">
         {/* HERO */}
         <section className="relative min-h-[60vh] md:h-125 flex items-center justify-center text-white">
