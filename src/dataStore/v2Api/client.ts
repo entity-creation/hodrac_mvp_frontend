@@ -3,6 +3,7 @@ import type {
   WishlistCard, WishlistDetail, FilterOptions, PagedResult,
   SavedContent, SearchResponse, UserProfile, CollaboratorDto,
   PricingSnapshot, DestinationFilters, WishlistFilters,
+  NewsLetterEmail,
 } from "../../types/index";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -126,6 +127,10 @@ export const authApi = {
 
   completeOnboarding: () =>
     patch<void>("/api/auth/me/onboarding", {}),
+
+  newsletter: (email: string) => {
+    post<NewsLetterEmail>("/api/auth/newletter", { userEmail: email})
+  }
 };
 
 // ─── Filter options API ───────────────────────────────────────────────────────

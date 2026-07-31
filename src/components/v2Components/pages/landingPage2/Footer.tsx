@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 // import { BsYoutube, BsTwitterX } from "react-icons/bs";
 // import { IoLogoInstagram } from "react-icons/io5";
 import { FaTiktok } from "react-icons/fa";
-import { createNewUserInfo } from "../../../../dataStore/user_info_apis";
 import { ROUTES } from "../../../../utils/v2Utils/routes";
+import { authApi } from "../../../../dataStore/v2Api/client";
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function Footer() {
   const handleJoin = async () => {
     if (!email.trim()) return;
     setLoading(true);
-    await createNewUserInfo(email);
+    await authApi.newsletter(email);
     setLoading(false);
     setJoined(true);
     setEmail("");

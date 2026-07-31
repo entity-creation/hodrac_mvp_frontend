@@ -266,6 +266,11 @@ export interface UserProfile {
   secondaryTravelerTypes: string[];
 }
 
+// ─── News Letter Emial ────────────────────────────────────────────────────
+export interface NewsLetterEmail {
+  userEmail: string;
+}
+
 // ─── Explore filters (query params) ──────────────────────────────────────────
 
 export interface DestinationFilters {
