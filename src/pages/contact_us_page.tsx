@@ -93,7 +93,7 @@ export default function ContactUsPage() {
           className="bg-white rounded-4xl shadow-2xl flex flex-col lg:flex-row w-full max-w-5xl overflow-hidden"
         >
           {/* LEFT SIDE: Contact Info */}
-          <div className="bg-gray-50 p-10 lg:w-2/5 flex flex-col justify-between">
+          <div className="bg-cream p-10 lg:w-2/5 flex flex-col justify-between">
             <motion.div variants={itemVariants}>
               <h2 className="text-3xl font-bold mb-8">Get in touch</h2>
 
@@ -114,7 +114,7 @@ export default function ContactUsPage() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="mt-12 lg:mt-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-ink-muted mb-4">
                 Follow Us
               </p>
               <div className="flex gap-4">
@@ -123,7 +123,7 @@ export default function ContactUsPage() {
                     key={index}
                     href={link}
                     whileHover={{ y: -3, scale: 1.1 }}
-                    className="p-3 text-purple-600! bg-white border border-gray-200 rounded-full text-xl hover:text-black! hover:border-purple-200 transition-all shadow-sm"
+                    className="p-3 text-purple-600! bg-white border border-line rounded-full text-xl hover:text-black! hover:border-purple-200 transition-all shadow-sm"
                   >
                     <Icon />
                   </motion.a>
@@ -140,11 +140,11 @@ export default function ContactUsPage() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-600">
+                  <label className="text-sm font-semibold text-ink-soft">
                     Full Name
                   </label>
                   <input
-                    className="border border-gray-200 h-12 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all"
+                    className="border border-line h-12 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all"
                     type="text"
                     placeholder="John Doe"
                     name="name"
@@ -154,11 +154,11 @@ export default function ContactUsPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-600">
+                  <label className="text-sm font-semibold text-ink-soft">
                     Email Address
                   </label>
                   <input
-                    className="border border-gray-200 h-12 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all"
+                    className="border border-line h-12 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all"
                     type="email"
                     placeholder="john@example.com"
                     name="email"
@@ -170,11 +170,11 @@ export default function ContactUsPage() {
               </div>
 
               <div className="flex flex-col gap-2 grow">
-                <label className="text-sm font-semibold text-gray-600">
+                <label className="text-sm font-semibold text-ink-soft">
                   Message
                 </label>
                 <textarea
-                  className="border border-gray-200 min-h-37.5 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all resize-none"
+                  className="border border-line min-h-37.5 p-4 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none transition-all resize-none"
                   placeholder="Tell us how we can help..."
                   name="message"
                   value={form.message}
@@ -186,7 +186,7 @@ export default function ContactUsPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all"
+                className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-ink-soft transition-all"
               >
                 {loading ? "Sending..." : "Send Message"}
               </motion.button>

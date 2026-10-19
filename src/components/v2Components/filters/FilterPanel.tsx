@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { FilterOptions, DestinationFilters, WishlistFilters } from "../../../types";
+import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 
 // ─── Filter chip ──────────────────────────────────────────────────────────────
 
@@ -10,10 +11,10 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-all duration-150 ${
+      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
         active
-          ? "border-gray-900 bg-gray-900 text-white"
-          : "border-gray-200 text-gray-600 hover:border-gray-400"
+          ? "border-ink bg-ink text-white"
+          : "border-line text-ink-soft hover:border-ink/30"
       }`}
       style={active && color ? { borderColor: color, backgroundColor: color } : {}}
     >
@@ -25,31 +26,34 @@ function Chip({
 // ─── Range slider row ─────────────────────────────────────────────────────────
 
 function RangeRow({
-  label, min, max, valueMin, valueMax, prefix = "",
+  label, min, max, valueMin, valueMax, prefix = "", format,
   onChangeMin, onChangeMax,
 }: {
   label: string; min: number; max: number;
   valueMin: number; valueMax: number; prefix?: string;
+  // Formats the label values (e.g. converting USD to the display currency).
+  format?: (v: number) => string;
   onChangeMin: (v: number) => void; onChangeMax: (v: number) => void;
 }) {
+  const show = (v: number) => (format ? format(v) : `${prefix}${v.toLocaleString()}`);
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-700">{label}</span>
-        <span className="text-xs text-gray-500">
-          {prefix}{valueMin.toLocaleString()} – {prefix}{valueMax.toLocaleString()}
+        <span className="text-xs font-semibold text-ink">{label}</span>
+        <span className="text-xs text-ink-soft">
+          {show(valueMin)} – {show(valueMax)}
         </span>
       </div>
       <div className="flex gap-3 items-center">
         <input
           type="range" min={min} max={max} value={valueMin}
           onChange={e => onChangeMin(Number(e.target.value))}
-          className="flex-1 accent-gray-900"
+          className="flex-1 accent-brand-500"
         />
         <input
           type="range" min={min} max={max} value={valueMax}
           onChange={e => onChangeMax(Number(e.target.value))}
-          className="flex-1 accent-gray-900"
+          className="flex-1 accent-brand-500"
         />
       </div>
     </div>
@@ -68,6 +72,7 @@ interface DestinationFilterPanelProps {
 export function DestinationFilterPanel({
   options, filters, onChange, onReset,
 }: DestinationFilterPanelProps) {
+  const { formatPrice } = useCurrency();
   const [open, setOpen] = useState(false);
 
   const selectedTags = filters.tags?.split(",").filter(Boolean) ?? [];
@@ -100,20 +105,20 @@ export function DestinationFilterPanel({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-200 hover:border-gray-900 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border border-line text-sm font-medium text-ink hover:border-ink transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
           Filters
           {activeCount > 0 && (
-            <span className="w-5 h-5 bg-gray-900 text-white text-[10px] rounded-full flex items-center justify-center">
+            <span className="w-5 h-5 bg-ink text-white text-[10px] rounded-full flex items-center justify-center">
               {activeCount}
             </span>
           )}
         </button>
         {activeCount > 0 && (
-          <button onClick={onReset} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
+          <button onClick={onReset} className="text-xs text-ink-muted hover:text-ink transition-colors">
             Reset all
           </button>
         )}
@@ -127,11 +132,11 @@ export function DestinationFilterPanel({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-6 flex flex-col gap-6">
+            <div className="bg-white border border-line rounded-2xl p-5 mb-6 flex flex-col gap-6">
 
               {/* Tags */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Travel Style</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Travel Style</p>
                 <div className="flex flex-wrap gap-2">
                   {options.tags.map(tag => (
                     <Chip
@@ -146,7 +151,7 @@ export function DestinationFilterPanel({
 
               {/* Categories */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Category</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Category</p>
                 <div className="flex flex-wrap gap-2">
                   {options.categories.map(cat => (
                     <Chip
@@ -162,11 +167,11 @@ export function DestinationFilterPanel({
 
               {/* Country */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Country</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Country</p>
                 <select
                   value={filters.countryId ?? ""}
                   onChange={e => onChange({ ...filters, countryId: e.target.value || undefined, page: 1 })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-gray-900 transition"
+                  className="w-full px-3 py-2.5 rounded-xl border border-line text-sm bg-white focus:outline-none focus:border-ink transition"
                 >
                   <option value="">All countries</option>
                   {options.countries.map(c => (
@@ -184,23 +189,23 @@ export function DestinationFilterPanel({
                 max={options.destinationPriceRange.max}
                 valueMin={filters.minCost ?? options.destinationPriceRange.min}
                 valueMax={filters.maxCost ?? options.destinationPriceRange.max}
-                prefix="$"
+                format={formatPrice}
                 onChangeMin={v => onChange({ ...filters, minCost: v, page: 1 })}
                 onChangeMax={v => onChange({ ...filters, maxCost: v, page: 1 })}
               />
 
               {/* Luxury */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Luxury Rating</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Luxury Rating</p>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(n => (
                     <button
                       key={n}
                       onClick={() => onChange({ ...filters, minLuxury: n, maxLuxury: n === (filters.minLuxury) ? undefined : n, page: 1 })}
-                      className={`w-9 h-9 rounded-full text-sm font-bold border-2 transition-all ${
+                      className={`w-9 h-9 rounded-full text-sm font-medium border transition-all ${
                         filters.minLuxury === n
-                          ? "border-amber-400 bg-amber-50 text-amber-600"
-                          : "border-gray-200 text-gray-200 hover:border-gray-400"
+                          ? "border-sun-500 bg-sun-100 text-ink"
+                          : "border-line text-ink hover:border-ink/30"
                       }`}
                     >
                       {n}
@@ -211,16 +216,16 @@ export function DestinationFilterPanel({
 
               {/* Safety */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Max Safety Level (lower = safer)</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Max Safety Level (lower = safer)</p>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(n => (
                     <button
                       key={n}
                       onClick={() => onChange({ ...filters, maxSafetyLevel: filters.maxSafetyLevel === n ? undefined : n, page: 1 })}
-                      className={`w-9 h-9 rounded-full text-sm font-bold border-2 transition-all ${
+                      className={`w-9 h-9 rounded-full text-sm font-medium border transition-all ${
                         filters.maxSafetyLevel === n
-                          ? "border-emerald-400 bg-emerald-50 text-emerald-600"
-                          : "border-gray-200 text-gray-200 hover:border-gray-400"
+                          ? "border-mint-500 bg-mint-100 text-mint-500"
+                          : "border-line text-ink hover:border-ink/30"
                       }`}
                     >
                       {n}
@@ -248,6 +253,7 @@ interface WishlistFilterPanelProps {
 export function WishlistFilterPanel({
   options, filters, onChange, onReset,
 }: WishlistFilterPanelProps) {
+  const { formatPrice } = useCurrency();
   const [open, setOpen] = useState(false);
 
   const selectedPersonas = filters.personaTypes?.split(",").filter(Boolean) ?? [];
@@ -277,15 +283,15 @@ export function WishlistFilterPanel({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border-2 border-gray-200 text-sm font-medium text-gray-200 hover:border-gray-900 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border border-line text-sm font-medium text-ink hover:border-ink transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
-          Filters {activeCount > 0 && <span className="w-5 h-5 bg-gray-900 text-white text-[10px] rounded-full flex items-center justify-center">{activeCount}</span>}
+          Filters {activeCount > 0 && <span className="w-5 h-5 bg-ink text-white text-[10px] rounded-full flex items-center justify-center">{activeCount}</span>}
         </button>
         {activeCount > 0 && (
-          <button onClick={onReset} className="text-xs text-gray-400 hover:text-gray-700">Reset all</button>
+          <button onClick={onReset} className="text-xs text-ink-muted hover:text-ink">Reset all</button>
         )}
       </div>
 
@@ -297,11 +303,11 @@ export function WishlistFilterPanel({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-6 flex flex-col gap-6">
+            <div className="bg-white border border-line rounded-2xl p-5 mb-6 flex flex-col gap-6">
 
               {/* Traveling as */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Traveling as</p>
+                <p className="text-xs font-semibold text-ink-soft uppercase tracking-wider mb-3">Traveling as</p>
                 <div className="flex flex-wrap gap-2">
                   {options.personaTypes.map(p => (
                     <Chip key={p} label={p} active={selectedPersonas.includes(p)} onClick={() => togglePersona(p)} />
@@ -311,7 +317,7 @@ export function WishlistFilterPanel({
 
               {/* Vibe tags */}
               <div>
-                <p className="text-xs font-semibold text-gray-200 uppercase tracking-wider mb-3">Trip Vibe</p>
+                <p className="text-xs font-semibold text-ink uppercase tracking-wider mb-3">Trip Vibe</p>
                 <div className="flex flex-wrap gap-2">
                   {options.tags.map(tag => (
                     <Chip key={tag.key} label={tag.tagName} active={selectedVibes.includes(tag.tagName)} onClick={() => toggleVibe(tag.tagName)} />
@@ -326,7 +332,7 @@ export function WishlistFilterPanel({
                 max={options.wishlistPriceRange.max}
                 valueMin={filters.minPrice ?? options.wishlistPriceRange.min}
                 valueMax={filters.maxPrice ?? options.wishlistPriceRange.max}
-                prefix="$"
+                format={formatPrice}
                 onChangeMin={v => onChange({ ...filters, minPrice: v, page: 1 })}
                 onChangeMax={v => onChange({ ...filters, maxPrice: v, page: 1 })}
               />

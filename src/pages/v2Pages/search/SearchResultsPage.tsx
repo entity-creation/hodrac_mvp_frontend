@@ -57,14 +57,14 @@ export default function SearchResultsPage() {
   const hasResults   = wishlists.length > 0 || destinations.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-cream">
       <div className="max-w-5xl mx-auto px-5 md:px-8 pb-20">
 
         {/* Search bar */}
         <div className="pt-10 pb-8">
           <form onSubmit={handleSubmit} className="relative">
-            <div className="flex items-center bg-white border-2 border-gray-200 rounded-2xl shadow-sm hover:border-gray-400 focus-within:border-gray-900 transition-all duration-200 overflow-hidden">
-              <svg className="ml-5 text-gray-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex items-center bg-white border border-line rounded-2xl shadow-sm hover:border-ink/30 focus-within:border-ink transition-all duration-200 overflow-hidden">
+              <svg className="ml-5 text-ink-muted shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
               <input
@@ -73,19 +73,19 @@ export default function SearchResultsPage() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder="Search destinations, wishlists, or travel styles..."
-                className="flex-1 px-4 py-4 text-gray-800 bg-transparent outline-none placeholder-gray-400"
+                className="flex-1 px-4 py-4 text-ink bg-transparent outline-none placeholder:text-ink-muted"
                 autoFocus
               />
               {input && (
                 <button
                   type="button"
                   onClick={() => { setInput(""); setSearchParams({}); setResults(null); }}
-                  className="mr-3 w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs hover:bg-gray-300 transition-colors"
+                  className="mr-3 w-6 h-6 rounded-full bg-ink/10 text-ink-soft flex items-center justify-center text-xs hover:bg-ink/10 transition-colors"
                 >✕</button>
               )}
               <button
                 type="submit"
-                className="m-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors shrink-0"
+                className="m-2 px-5 py-2.5 bg-ink text-white text-sm font-semibold rounded-xl hover:bg-ink-soft transition-colors shrink-0"
               >
                 Search
               </button>
@@ -101,13 +101,13 @@ export default function SearchResultsPage() {
                 exit={{ opacity: 0, y: 10 }}
                 className="mt-6"
               >
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Popular searches</p>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">Popular searches</p>
                 <div className="flex flex-wrap gap-2">
                   {popular.map(p => (
                     <button
                       key={p.phrase}
                       onClick={() => handlePopularClick(p.phrase)}
-                      className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-all"
+                      className="px-4 py-2 bg-white border border-line rounded-full text-sm text-ink hover:border-ink hover:text-ink transition-all"
                     >
                       🔍 {p.phrase}
                     </button>
@@ -121,7 +121,7 @@ export default function SearchResultsPage() {
         {/* Results header */}
         {q && !loading && (
           <div className="mb-6">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-soft">
               {hasResults
                 ? `Showing results for "${results?.canonicalPhrase ?? q}"`
                 : `No results for "${q}"`}
@@ -131,7 +131,7 @@ export default function SearchResultsPage() {
 
         {/* Tabs (only when results exist) */}
         {hasResults && !loading && (
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl w-fit mb-8">
+          <div className="flex gap-1 bg-cream-deep p-1 rounded-2xl w-fit mb-8">
             {[
               { key: "all",          label: `All (${wishlists.length + destinations.length})` },
               { key: "wishlists",    label: `Wishlists (${wishlists.length})` },
@@ -142,8 +142,8 @@ export default function SearchResultsPage() {
                 onClick={() => setActiveTab(tab.key as typeof activeTab)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   activeTab === tab.key
-                    ? "bg-white text-gray-400 shadow-sm"
-                    : "text-gray-200 hover:text-gray-700"
+                    ? "bg-white text-ink-muted shadow-sm"
+                    : "text-ink hover:text-ink"
                 }`}
               >
                 {tab.label}
@@ -156,13 +156,13 @@ export default function SearchResultsPage() {
         {loading && (
           <div className="flex flex-col gap-10">
             <div>
-              <p className="text-sm font-semibold text-gray-200 mb-4">Wishlists</p>
+              <p className="text-sm font-semibold text-ink mb-4">Wishlists</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => <WishlistCardSkeleton key={i} />)}
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-200 mb-4">Destinations</p>
+              <p className="text-sm font-semibold text-ink mb-4">Destinations</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => <DestinationCardSkeleton key={i} />)}
               </div>
@@ -178,10 +178,10 @@ export default function SearchResultsPage() {
             subtitle={`We couldn't find anything for "${q}". Try a different search term or explore our content.`}
             action={
               <div className="flex flex-wrap gap-3 justify-center">
-                <button onClick={() => navigate("/explore/wishlists")} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full">
+                <button onClick={() => navigate("/explore/wishlists")} className="px-5 py-2.5 bg-ink text-white text-sm font-semibold rounded-full">
                   Browse wishlists
                 </button>
-                <button onClick={() => navigate("/explore/destinations")} className="px-5 py-2.5 border-2 border-gray-900 text-gray-400 text-sm font-semibold rounded-full">
+                <button onClick={() => navigate("/explore/destinations")} className="px-5 py-2.5 border border-line text-ink-muted text-sm font-semibold rounded-full">
                   Browse destinations
                 </button>
               </div>
@@ -192,18 +192,39 @@ export default function SearchResultsPage() {
         {/* Results */}
         {!loading && hasResults && (
           <div className="flex flex-col gap-12">
+            {/* A tab with nothing in it (e.g. no wishlists for this search) */}
+            {activeTab === "wishlists" && wishlists.length === 0 && (
+              <TabEmpty
+                title={`No wishlists for “${q}” yet`}
+                subtitle="There are destinations that match, though."
+                actionLabel={`See ${destinations.length} destination${destinations.length === 1 ? "" : "s"}`}
+                onAction={() => setActiveTab("destinations")}
+              />
+            )}
+            {activeTab === "destinations" && destinations.length === 0 && (
+              <TabEmpty
+                title={`No destinations for “${q}”`}
+                subtitle="There are wishlists that match, though."
+                actionLabel={`See ${wishlists.length} wishlist${wishlists.length === 1 ? "" : "s"}`}
+                onAction={() => setActiveTab("wishlists")}
+              />
+            )}
+            {activeTab === "all" && wishlists.length === 0 && (
+              <p className="text-sm text-ink-muted">
+                No wishlists match “{q}” yet. Here are the destinations that do.
+              </p>
+            )}
             {/* Wishlists */}
             {(activeTab === "all" || activeTab === "wishlists") && wishlists.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-5">
                   <p
-                    className="text-xl font-black text-gray-900"
-                    style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+                    className="font-display text-xl font-normal text-ink"
                   >
                     Wishlists
                   </p>
                   {activeTab === "all" && (
-                    <button onClick={() => setActiveTab("wishlists")} className="text-sm text-gray-300 hover:text-gray-700">
+                    <button onClick={() => setActiveTab("wishlists")} className="text-sm text-ink hover:text-ink">
                       See all →
                     </button>
                   )}
@@ -227,13 +248,12 @@ export default function SearchResultsPage() {
               <section>
                 <div className="flex items-center justify-between mb-5">
                   <p
-                    className="text-xl font-black text-gray-900"
-                    style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+                    className="font-display text-xl font-normal text-ink"
                   >
                     Destinations
                   </p>
                   {activeTab === "all" && (
-                    <button onClick={() => setActiveTab("destinations")} className="text-sm text-gray-400 hover:text-gray-700">
+                    <button onClick={() => setActiveTab("destinations")} className="text-sm text-ink-muted hover:text-ink">
                       See all →
                     </button>
                   )}
@@ -254,6 +274,20 @@ export default function SearchResultsPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TabEmpty({
+  title, subtitle, actionLabel, onAction,
+}: { title: string; subtitle: string; actionLabel: string; onAction: () => void }) {
+  return (
+    <div className="text-center py-16">
+      <h3 className="text-2xl font-light text-ink mb-2">{title}</h3>
+      <p className="text-ink-muted text-sm mb-6">{subtitle}</p>
+      <button onClick={onAction} className="text-sm text-ink underline underline-offset-4 hover:text-ink-soft">
+        {actionLabel}
+      </button>
     </div>
   );
 }

@@ -1,110 +1,104 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { wishlistsApi } from "../../../../dataStore/v2Api/client";
-import type { PersonalizationData } from "./PersonalizationModal";
+import { useAuth } from "../../../../hooks/v2Hooks/useAuth";
+import { useSavedContent } from "../../../../hooks/v2Hooks/useData";
+import { usePersonalization, type PersonalizationData } from "../../../../hooks/v2Hooks/usePersonalization";
+import { WishlistCardComponent } from "../../cards/Cards";
+import { Section, WishlistCardSkeleton } from "../../ui";
+import { ROUTES } from "../../../../utils/v2Utils/routes";
 import type { WishlistCard } from "../../../../types";
 
-interface SocialValidationStripProps {
-  personalization: PersonalizationData | null;
-  userId?: string;
+// Headline tailored to what we know about the visitor (from the quiz).
+function headline(p: PersonalizationData | null): string {
+  const interest = p?.interests?.[0];
+  if (p?.travelGroup === "Partner") return "Couples like you are exploring";
+  if (p?.travelGroup === "Family") return "Families like you are exploring";
+  if (p?.travelGroup === "Friends") return "Groups of friends like you are exploring";
+  if (p?.budget === "Luxury") return "Travellers with your taste are exploring";
+  if (interest) return `${interest} lovers like you are exploring`;
+  return "Travellers like you are exploring";
 }
 
-function vibeEmoji(tags: string[]): string {
-  const map: Record<string, string> = {
-    Anime: "⛩️", Food: "🍜", Luxury: "✨", Relaxation: "🧘",
-    Nightlife: "🌙", Nature: "🌿", Culture: "🎭", Adventure: "🧗",
-    Budget: "💸", Romance: "💑", Hidden: "💎",
-  };
-  for (const tag of tags) if (map[tag]) return map[tag];
-  return "🌏";
+// What similar travellers are saving. Tries the most personal source first
+// and falls back so the section still shows when an endpoint is empty/fails:
+// popular (persona-ranked when signed in) → matching-user → most saved → featured.
+async function loadTravellersLikeYou(userId?: string): Promise<WishlistCard[]> {
+  const sources: Array<() => Promise<WishlistCard[]>> = [
+    () => wishlistsApi.popular(userId, 12),
+    ...(userId ? [() => wishlistsApi.matchingUser(userId, 12)] : []),
+    () => wishlistsApi.list({ sort: "saves", page: 1, pageSize: 12 }).then(r => r.items ?? []),
+    () => wishlistsApi.featured(),
+  ];
+  for (const load of sources) {
+    const result = await load().catch(() => [] as WishlistCard[]);
+    if (Array.isArray(result) && result.length) return result.slice(0, 12);
+  }
+  return [];
 }
 
-function getLabel(p: PersonalizationData | null): string {
-  if (!p) return "🔥 Travelers like you are exploring:";
-  if (p.interests?.includes("Anime"))  return "Travelers like you are exploring: Tokyo Anime Escapes";
-  if (p.interests?.includes("Food"))   return "Travelers like you are exploring: Japan Food Tours";
-  if (p.budget === "Luxury")           return "Travelers like you are exploring: Premium Japan Experiences";
-  if (p.travelGroup === "Partner")     return "Travelers like you are exploring: Romantic Japan Getaways";
-  if (p.travelGroup === "Family")      return "Travelers like you are exploring: Family-Friendly Adventures";
-  return "Travelers like you are exploring:";
-}
-
-export default function SocialValidationStrip({ personalization, userId }: SocialValidationStripProps) {
-  const navigate  = useNavigate();
-  const [wishlists, setWishlists] = useState<WishlistCard[]>([]);
-  const [loading,   setLoading]   = useState(true);
+// "Travellers like you" — what similar travellers are saving right now.
+export default function SocialValidationStrip() {
+  const { user, isAuthenticated } = useAuth();
+  const { personalization } = usePersonalization();
+  const { isWishlistSaved, toggleWishlist } = useSavedContent(isAuthenticated);
+  const [wishlists, setWishlists] = useState<WishlistCard[] | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Use popular?user_id to get persona-ranked results when user is authenticated.
-    // Falls back to un-ranked popular list for anonymous visitors.
-    wishlistsApi.popular(userId, 12)
-      .then(setWishlists)
-      .catch(() => setWishlists([]))
-      .finally(() => setLoading(false));
-  }, [userId]);
+    let cancelled = false;
+    loadTravellersLikeYou(user?.userId)
+      .then(r => { if (!cancelled) setWishlists(r); });
+    return () => { cancelled = true; };
+  }, [user?.userId]);
 
-  const label = getLabel(personalization);
+  if (wishlists && wishlists.length === 0) return null;
 
-  // Double the array for the infinite scroll effect
-  const items = [...wishlists, ...wishlists];
+  const scrollBy = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({ left: dir * scroller.current.clientWidth * 0.8, behavior: "smooth" });
 
   return (
-    <section className="w-full py-12 bg-gray-950 text-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-5 md:px-8">
-        {/* Label — personalized when onboarding is complete */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center text-sm font-medium text-gray-400 mb-6 tracking-wide"
+    <Section
+      id="travellers-like-you"
+      eyebrow="Travellers like you"
+      title={headline(personalization)}
+      subtitle="The trips people with similar tastes are saving right now."
+      action={{ label: "View all", to: ROUTES.PUBLIC.EXPLOREWISHLIST }}
+      className="scroll-mt-16"
+    >
+      <div className="relative">
+        <div
+          ref={scroller}
+          className="flex gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-2"
         >
-          {label}
-        </motion.p>
-
-        {/* Scrolling strip */}
-        <div className="relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-20 bg-linear-to-r from-gray-950 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-20 bg-linear-to-l from-gray-950 to-transparent z-10 pointer-events-none" />
-
-          {loading ? (
-            // Skeleton strip while loading
-            <div className="flex gap-4 overflow-hidden">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="shrink-0 w-56 h-14 bg-white/5 rounded-full animate-pulse" />
-              ))}
+          {(wishlists ?? Array.from({ length: 4 }, () => null)).map((w, i) => (
+            <div key={w?.wishlistId ?? i} className="shrink-0 w-[78%] sm:w-[45%] lg:w-[calc(25%-18px)] snap-start">
+              {w ? (
+                <WishlistCardComponent
+                  wishlist={w}
+                  saved={isWishlistSaved(w.wishlistId)}
+                  onToggleSave={() => toggleWishlist(w.wishlistId)}
+                  index={i}
+                  source="landing_travellers_like_you"
+                />
+              ) : (
+                <WishlistCardSkeleton />
+              )}
             </div>
-          ) : wishlists.length === 0 ? null : (
-            <motion.div
-              className="flex gap-4 w-max"
-              animate={{ x: ["0%", "-50%"] }}
-              transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-            >
-              {items.map((w, i) => (
-                <button
-                  key={`${w.wishlistId}-${i}`}
-                  onClick={() => navigate(`/wishlists/${w.wishlistId}/${slugify(w.wishlistName)}`)}
-                  className="shrink-0 flex items-center gap-3 px-5 py-3 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span className="text-lg">{vibeEmoji(w.psychologicalVibeTags)}</span>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-white whitespace-nowrap">
-                      {w.wishlistName}
-                    </p>
-                    <p className="text-xs text-gray-500 whitespace-nowrap">
-                      Popular among {w.peopleType}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </motion.div>
-          )}
+          ))}
         </div>
-      </div>
-    </section>
-  );
-}
 
-function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+        {wishlists && wishlists.length > 4 && (
+          <div className="hidden md:flex justify-end gap-2 mt-6">
+            <button onClick={() => scrollBy(-1)} aria-label="Previous" className="w-11 h-11 rounded-full border border-line hover:border-ink flex items-center justify-center transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => scrollBy(1)} aria-label="Next" className="w-11 h-11 rounded-full border border-line hover:border-ink flex items-center justify-center transition-colors">
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
 }

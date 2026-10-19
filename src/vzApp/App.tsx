@@ -1,13 +1,17 @@
-import { useState } from "react";
-import {Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "../hooks/v2Hooks/useAuth";
+import { PersonalizationProvider } from "../hooks/v2Hooks/usePersonalization";
+import { CurrencyProvider } from "../hooks/v2Hooks/useCurrency";
 import "../App.css";
+
 // Layout
 import AppNavBar from "../components/v2Components/layout/AppNavBar";
+import Footer from "../components/v2Components/pages/landingPage2/Footer";
+import RequireAuth from "../components/v2Components/auth/RequireAuth";
+import { ButtonLink } from "../components/v2Components/ui";
 
-// Landing page (existing)
+// Landing
 import LandingPage from "../pages/v2Pages/landingPage/LandingPage";
-import PersonalizationModal, { type PersonalizationData } from "../components/v2Components/pages/landingPage2/PersonalizationModal";
 
 // Explore
 import ExploreWishlistsPage    from "../pages/v2Pages/explore/ExploreWishlistsPage";
@@ -18,7 +22,7 @@ import WishlistDetailPage    from "../pages/v2Pages/detail/WishlistDetailPage";
 import DestinationDetailPage from "../pages/v2Pages/detail/DestinationDetailPage";
 
 // User
-import SavedPage         from "../pages/v2Pages//user/SavedPage";
+import SavedPage         from "../pages/v2Pages/user/SavedPage";
 import MyWishlistsPage   from "../pages/v2Pages/user/MyWishlistsPage";
 import EditWishlistPage  from "../pages/v2Pages/user/EditWishlistPage";
 import CollaboratePage   from "../pages/v2Pages/user/CollaboratePage";
@@ -27,41 +31,50 @@ import CollaboratePage   from "../pages/v2Pages/user/CollaboratePage";
 import SearchResultsPage from "../pages/v2Pages/search/SearchResultsPage";
 
 // Auth
-import { LoginPage, RegisterPage } from "../pages/v2Pages/auth/AuthPages";
+import { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, ConfirmEmailPage } from "../pages/v2Pages/auth/AuthPages";
+import AccountPage from "../pages/v2Pages/user/AccountPage";
+
+// Trips
+import BrowseTripPage     from "../pages/v2Pages/trip/BrowseTripPage";
+import CreateTripPage     from "../pages/v2Pages/trip/CreateTripPage";
+import TripThreadChatPage from "../pages/v2Pages/trip/TripThreadChatPage";
+import TripHubPage        from "../pages/v2Pages/trip/TripHubPage";
+
+// Business & info
+import PartnersPage  from "../pages/v2Pages/partners/PartnersPage";
 import ContactUsPage from "../pages/contact_us_page";
-import AboutPage from "../pages/about_page";
+import AboutPage     from "../pages/about_page";
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
-// Pages that use the AppNavBar (everything except the landing page root)
 
 function AppLayout() {
   const location = useLocation();
+  // The landing hero sits under the transparent navbar; other pages get a spacer.
   const isLanding = location.pathname === "/";
 
-  // Personalization modal state — available app-wide via NavBar "For You" button
-  const [modalOpen, setModalOpen] = useState(false);
-  const [, setPersonalization] = useState<PersonalizationData | null>(null);
-
-  if (isLanding) return <Outlet />;
-
   return (
-    <>
-      <AppNavBar onForYouClick={() => setModalOpen(true)} />
-
-      <PersonalizationModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onComplete={(data) => {
-          setPersonalization(data);
-          setModalOpen(false);
-        }}
-      />
-
-      {/* Spacer for fixed navbar */}
-      <div className="pt-16">
+    <div className="min-h-screen flex flex-col overflow-x-clip">
+      <AppNavBar />
+      <main className={`flex-1 ${isLanding ? "" : "pt-16"}`}>
         <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center px-5">
+      <div className="text-center">
+        <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-ink-muted mb-6">404</p>
+        <h1 className="text-4xl md:text-5xl font-light text-ink mb-3">This page could not be found</h1>
+        <p className="text-ink-soft mb-8 max-w-sm mx-auto">
+          The link may be broken, or the page may have moved.
+        </p>
+        <ButtonLink to="/" size="lg">Return home</ButtonLink>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -70,58 +83,55 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      
+      <CurrencyProvider>
+      <PersonalizationProvider>
         <Routes>
-          {/* Landing page has its own nav */}
-          <Route path="/" element={<LandingPage />} />
-
-          {/* All other pages share AppLayout with the app navbar */}
           <Route element={<AppLayout />}>
-            {/* Explore */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Explore — public */}
             <Route path="/explore/wishlists"    element={<ExploreWishlistsPage />} />
             <Route path="/explore/destinations" element={<ExploreDestinationsPage />} />
+            <Route path="/search"               element={<SearchResultsPage />} />
+            <Route path="/browse-trip"          element={<BrowseTripPage />} />
 
-            {/* Detail pages */}
+            {/* Detail — public */}
             <Route path="/wishlists/:id/:slug"    element={<WishlistDetailPage />} />
             <Route path="/wishlists/:id"          element={<WishlistDetailPage />} />
             <Route path="/destinations/:id/:slug" element={<DestinationDetailPage />} />
             <Route path="/destinations/:id"       element={<DestinationDetailPage />} />
 
-            {/* User pages */}
-            <Route path="/saved"                              element={<SavedPage />} />
-            <Route path="/my-wishlists"                       element={<MyWishlistsPage />} />
-            <Route path="/my-wishlists/:id/edit"              element={<EditWishlistPage />} />
-            <Route path="/my-wishlists/:id/collaborate"       element={<CollaboratePage />} />
-
-            {/* Search */}
-            <Route path="/search" element={<SearchResultsPage />} />
+            {/* Signed-in only — logged-out visitors are sent to login and back */}
+            <Route element={<RequireAuth />}>
+              <Route path="/saved"                        element={<SavedPage />} />
+              <Route path="/my-wishlists"                 element={<MyWishlistsPage />} />
+              <Route path="/my-wishlists/:id/edit"        element={<EditWishlistPage />} />
+              <Route path="/my-wishlists/:id/collaborate" element={<CollaboratePage />} />
+              <Route path="/create-trip"                  element={<CreateTripPage />} />
+              <Route path="/trip-thread/:id"              element={<TripThreadChatPage />} />
+              <Route path="/trip-hub"                     element={<TripHubPage />} />
+              <Route path="/account"                      element={<AccountPage />} />
+            </Route>
 
             {/* Auth */}
             <Route path="/auth/login"    element={<LoginPage />} />
             <Route path="/auth/register" element={<RegisterPage />} />
+            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            {/* Paths match the links in the backend's emails */}
+            <Route path="/reset-password"       element={<ResetPasswordPage />} />
+            <Route path="/confirm-email"        element={<ConfirmEmailPage />} />
+            <Route path="/auth/reset-password"  element={<ResetPasswordPage />} />
 
-            {/* Footer */}
-            <Route path="/contact-us" element={<ContactUsPage/>}/>
-            <Route path="/about" element={<AboutPage/>}/>
+            {/* Business & info */}
+            <Route path="/partners"   element={<PartnersPage />} />
+            <Route path="/contact-us" element={<ContactUsPage />} />
+            <Route path="/about"      element={<AboutPage />} />
 
-            {/* Catch-all */}
-            <Route path="*" element={
-              <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <p className="text-6xl mb-4">🗺️</p>
-                  <h1 className="text-2xl font-black text-gray-900 mb-2" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
-                    Page not found
-                  </h1>
-                  <p className="text-gray-500 mb-6 text-sm">This route doesn't exist yet — or you may have followed a broken link.</p>
-                  <a href="/" className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full inline-block">
-                    Back to home
-                  </a>
-                </div>
-              </div>
-            } />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
-      
+      </PersonalizationProvider>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

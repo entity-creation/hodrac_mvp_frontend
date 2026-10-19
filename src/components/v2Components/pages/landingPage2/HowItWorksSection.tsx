@@ -1,97 +1,66 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { Section } from "../../ui";
+import { ROUTES } from "../../../../utils/v2Utils/routes";
 
+// "What is this?" → "I understand." Three plain-language steps, each linking
+// to the part of the product it describes.
 const STEPS = [
   {
-    number: "01",
-    emoji: "🔍",
-    title: "Discover",
-    description: "Explore structured trips designed around real travel styles — not random destination lists.",
-    accent: "#6366f1",
+    n: "01",
+    title: "Be inspired",
+    body: "Ready-made itineraries from real travellers and creators, with day-by-day plans and honest costs.",
+    cta: "Browse trips",
+    to: ROUTES.PUBLIC.EXPLOREWISHLIST,
   },
   {
-    number: "02",
-    emoji: "⭐",
-    title: "Personalize",
-    description: "Save trips, explore destinations, and build a travel feed tailored to your interests, budget, and travel group.",
-    accent: "#f59e0b",
+    n: "02",
+    title: "Know before you go",
+    body: "A considered guide to every destination: daily costs, safety, hidden expenses and the best time to visit.",
+    cta: "Explore destinations",
+    to: ROUTES.PUBLIC.EXPLOREDESTINATION,
   },
   {
-    number: "03",
-    emoji: "👥",
-    title: "Plan Together",
-    description: "Share wishlists, coordinate budgets and schedules with fellow travelers — from first idea to final itinerary.",
-    accent: "#10b981",
+    n: "03",
+    title: "Travel together",
+    body: "See who is already heading there and ask to join, or share your own plans and choose your companions.",
+    cta: "Find companions",
+    to: ROUTES.PUBLIC.BROWSETRIPS,
   },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <section className="w-full py-20 px-5 md:px-8 bg-white" id="how-it-works">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">Simple by design</p>
-          <h2
-            className="text-3xl md:text-5xl font-black text-gray-900"
-            style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+    <Section
+      id="how-it-works"
+      eyebrow="How it works"
+      title="From undecided to departure."
+      subtitle="Hodrac is for people who know they want to travel, just not yet where."
+      className="bg-white border-y border-line"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-line border border-line rounded-2xl overflow-hidden">
+        {STEPS.map((step, i) => (
+          <motion.div
+            key={step.n}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ delay: i * 0.12, duration: 0.6 }}
+            className="bg-white"
           >
-            How Hodrac Works
-          </h2>
-        </motion.div>
-
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {/* Connector line (desktop only) */}
-          <div className="hidden md:block absolute top-10 left-[15%] right-[15%] h-px bg-gray-200 z-0" />
-
-          {STEPS.map((step, index) => (
-            <motion.div
-              key={step.number}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.15 }}
-              className="relative z-10 flex flex-col items-center text-center"
-            >
-              {/* Icon Container with solid white background to hide the underlying connector line */}
-              <div className="relative mb-5 z-10 w-20 h-20 rounded-3xl bg-white shadow-sm flex items-center justify-center">
-                {/* Accent Tint Overlay layer */}
-                <div 
-                  className="absolute inset-0 rounded-3xl"
-                  style={{ 
-                    backgroundColor: `${step.accent}15`, 
-                    border: `2px solid ${step.accent}30` 
-                  }} 
-                />
-                
-                {/* Emoji Content Layer */}
-                <span className="relative z-10 text-3xl">{step.emoji}</span>
-              </div>
-
-              <span
-                className="text-xs font-black uppercase tracking-widest mb-2"
-                style={{ color: step.accent }}
-              >
-                Step {step.number}
+            <Link to={step.to} className="group flex flex-col h-full p-8 md:p-10 hover:bg-cream transition-colors">
+              <span className="font-display text-sm text-ink-muted mb-10">{step.n}</span>
+              <h3 className="text-2xl font-light text-ink mb-3">{step.title}</h3>
+              <p className="text-ink-soft leading-relaxed mb-8">{step.body}</p>
+              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-ink">
+                {step.cta}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
-
-              <h3
-                className="text-xl font-black text-gray-900 mb-3"
-                style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
-              >
-                {step.title}
-              </h3>
-
-              <p className="text-sm text-gray-500 max-w-xs leading-relaxed">{step.description}</p>
-            </motion.div>
-          ))}
-        </div>
+            </Link>
+          </motion.div>
+        ))}
       </div>
-    </section>
+    </Section>
   );
 }

@@ -30,26 +30,10 @@ export default function MyWishlistsPage() {
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <EmptyState
-          emoji="🔐"
-          title="Sign in to see your wishlists"
-          action={
-            <button onClick={() => navigate("/auth/login")} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full">
-              Sign In
-            </button>
-          }
-        />
-      </div>
-    );
-  }
-
   const displayed = tab === "mine" ? mine : shared;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-cream">
       <div className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
         <PageHeader
           label="My Trips"
@@ -58,11 +42,11 @@ export default function MyWishlistsPage() {
         />
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl w-fit mx-auto mb-10">
+        <div className="flex gap-1 bg-cream-deep p-1 rounded-2xl w-fit mx-auto mb-10">
           <button
             onClick={() => setTab("mine")}
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              tab === "mine" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              tab === "mine" ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
             }`}
           >
             My Wishlists ({loading ? "…" : mine.length})
@@ -70,7 +54,7 @@ export default function MyWishlistsPage() {
           <button
             onClick={() => setTab("shared")}
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              tab === "shared" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              tab === "shared" ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
             }`}
           >
             Shared with Me ({loading ? "…" : shared.length})
@@ -94,7 +78,7 @@ export default function MyWishlistsPage() {
               tab === "mine" ? (
                 <button
                   onClick={() => navigate("/explore/wishlists")}
-                  className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full"
+                  className="px-5 py-2.5 bg-ink text-white text-sm font-semibold rounded-full"
                 >
                   Browse wishlists →
                 </button>
@@ -115,13 +99,13 @@ export default function MyWishlistsPage() {
                 <div className="absolute bottom-5 left-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/my-wishlists/${w.wishlistId}/edit`); }}
-                    className="flex-1 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors"
+                    className="flex-1 py-2 bg-ink text-white text-xs font-semibold rounded-xl hover:bg-ink-soft transition-colors"
                   >
                     ✏️ Edit
                   </button>
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/my-wishlists/${w.wishlistId}/collaborate`); }}
-                    className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:border-gray-900 transition-colors"
+                    className="flex-1 py-2 bg-white border border-line text-ink text-xs font-semibold rounded-xl hover:border-ink transition-colors"
                   >
                     👥 Collaborate
                   </button>

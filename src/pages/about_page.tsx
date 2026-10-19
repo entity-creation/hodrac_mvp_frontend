@@ -15,7 +15,7 @@ const staggerContainer: Variants = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen w-full bg-white overflow-x-hidden">
-      <div className="bg-black text-gray-800">
+      <div className="bg-black text-ink">
         {/* HERO */}
         <section className="relative min-h-[60vh] md:h-125 flex items-center justify-center text-white">
           <motion.img
@@ -37,7 +37,7 @@ export default function AboutPage() {
               Your portal to the world
             </motion.h1>
 
-            <motion.p variants={fadeIn} className="text-lg md:text-xl max-w-xl text-gray-200 mx-auto md:mx-0">
+            <motion.p variants={fadeIn} className="text-lg md:text-xl max-w-xl text-ink mx-auto md:mx-0">
               Making travel easier, smarter, and more enjoyable for anyone who
               wants to explore the world.
             </motion.p>
@@ -105,10 +105,10 @@ export default function AboutPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="text-center mt-40 bg-blue-50 p-12 rounded-[3rem] max-w-4xl mx-auto"
+              className="text-center mt-40 bg-sky-100 p-12 rounded-[3rem] max-w-4xl mx-auto"
             >
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <p className="text-ink-soft text-lg leading-relaxed">
                 We believe travel should be seamless. Hodrac is building the tools that help travelers move from the idea of a trip to the experience of it more easily, confidently, and with less stress.
               </p>
             </motion.div>
@@ -124,9 +124,9 @@ export default function AboutPage() {
 
 function StatCard({ number, label }: { number: string; label: string }) {
   return (
-    <motion.div variants={fadeIn} className="bg-gray-50 p-10 rounded-3xl text-center border border-gray-100">
+    <motion.div variants={fadeIn} className="bg-cream p-10 rounded-3xl text-center border border-line">
       <h3 className="text-4xl font-bold text-purple-600 mb-2">{number}</h3>
-      <p className="text-gray-500 font-medium">{label}</p>
+      <p className="text-ink-soft font-medium">{label}</p>
     </motion.div>
   );
 }
@@ -142,11 +142,11 @@ function Section({ title, text, image, reverse }: { title: string; text: string;
     >
       <motion.div variants={fadeIn} className={reverse ? "md:order-last" : ""}>
         <h2 className="text-3xl md:text-4xl font-bold mb-6">{title}</h2>
-        <p className="text-gray-600 text-lg leading-relaxed whitespace-pre-line">{text}</p>
+        <p className="text-ink-soft text-lg leading-relaxed whitespace-pre-line">{text}</p>
       </motion.div>
 
       <motion.div variants={fadeIn}>
-        <img src={image} alt={title} className="rounded-[2.5rem] h-80 md:h-125 w-full object-cover shadow-2xl" />
+        <img src={image} alt={title} className="rounded-3xl h-80 md:h-125 w-full object-cover shadow-2xl" />
       </motion.div>
     </motion.div>
   );
@@ -156,11 +156,11 @@ function ValueCard({ title, text }: { title: string; text: string }) {
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
+      className="bg-white p-8 rounded-3xl border border-line shadow-sm hover:shadow-md transition-all"
     >
       <div className="w-12 h-1 text-purple-600 bg-purple-600 mb-6 rounded-full" />
       <h3 className="text-xl font-bold mb-4">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{text}</p>
+      <p className="text-ink-soft leading-relaxed">{text}</p>
     </motion.div>
   );
 }

@@ -1,96 +1,161 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Heart, X, ArrowRight, Loader2 } from "lucide-react";
 
 // ─── Button ───────────────────────────────────────────────────────────────────
+
+type ButtonVariant =
+  | "primary"   // solid black — the main call to action
+  | "secondary" // charcoal
+  | "dark"      // solid ink
+  | "outline"   // hairline outline on white
+  | "soft"      // quiet tinted
+  | "ghost"
+  | "danger";
 
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: "primary" | "outline" | "ghost" | "danger";
+  variant?: ButtonVariant;
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
   loading?: boolean;
   className?: string;
   type?: "button" | "submit";
   fullWidth?: boolean;
+  ariaLabel?: string;
+}
+
+const BUTTON_BASE =
+  "inline-flex items-center justify-center font-medium tracking-wide rounded-full transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed";
+
+const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
+  primary: "bg-ink text-white hover:bg-ink-soft",
+  secondary: "bg-grape-500 text-white hover:bg-ink",
+  dark: "bg-ink text-white hover:bg-ink-soft",
+  outline: "bg-transparent text-ink border border-ink/25 hover:border-ink hover:bg-white",
+  soft: "bg-cream-deep text-ink hover:bg-brand-100",
+  ghost: "text-ink-soft hover:text-ink hover:bg-ink/5",
+  danger: "bg-red-700 text-white hover:bg-red-800",
+};
+
+const BUTTON_SIZES = {
+  sm: "px-4 py-2 text-xs gap-1.5",
+  md: "px-5 py-2.5 text-sm gap-2",
+  lg: "px-7 py-3.5 text-sm gap-2",
+};
+
+export function buttonClasses(
+  variant: ButtonVariant = "primary",
+  size: "sm" | "md" | "lg" = "md",
+  extra = ""
+) {
+  return `${BUTTON_BASE} ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${extra}`;
 }
 
 export function Button({
   children, onClick, variant = "primary", size = "md",
-  disabled, loading, className = "", type = "button", fullWidth,
+  disabled, loading, className = "", type = "button", fullWidth, ariaLabel,
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center font-semibold rounded-full transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
-
-  const variants = {
-    primary: "bg-gray-900 text-white hover:bg-gray-700",
-    outline: "border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white",
-    ghost:   "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
-    danger:  "bg-red-600 text-white hover:bg-red-700",
-  };
-
-  const sizes = {
-    sm: "px-4 py-2 text-xs gap-1.5",
-    md: "px-5 py-2.5 text-sm gap-2",
-    lg: "px-7 py-3.5 text-base gap-2",
-  };
-
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`p-0! ${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      aria-label={ariaLabel}
+      className={buttonClasses(variant, size, `${fullWidth ? "w-full" : ""} ${className}`)}
     >
-      {loading && (
-        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-        </svg>
-      )}
+      {loading && <Loader2 className="animate-spin w-4 h-4" />}
       {children}
     </button>
   );
 }
 
+// Router link styled as a Button.
+export function ButtonLink({
+  to, children, variant = "primary", size = "md", className = "",
+}: {
+  to: string;
+  children: React.ReactNode;
+  variant?: ButtonVariant;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  return (
+    <Link to={to} className={buttonClasses(variant, size, className)}>
+      {children}
+    </Link>
+  );
+}
+
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
+type BadgeTone = "brand" | "grape" | "sky" | "sun" | "mint" | "ink" | "neutral" | "sponsored";
+
+const BADGE_TONES: Record<BadgeTone, string> = {
+  brand: "bg-brand-100 text-brand-700",
+  grape: "bg-grape-100 text-grape-700",
+  sky: "bg-sky-100 text-ink",
+  sun: "bg-sun-300 text-ink",
+  mint: "bg-mint-100 text-ink",
+  ink: "bg-ink text-white",
+  neutral: "bg-ink/5 text-ink-soft",
+  sponsored: "bg-sun-100 text-sun-500 border border-sun-300",
+};
+
 export function Badge({
-  children, color = "#6366f1",
-}: { children: React.ReactNode; color?: string }) {
+  children, tone = "neutral", className = "",
+}: { children: React.ReactNode; tone?: BadgeTone; className?: string }) {
   return (
     <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
-      style={{ backgroundColor: `${color}18`, color }}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-[0.12em] ${BADGE_TONES[tone]} ${className}`}
     >
       {children}
     </span>
   );
 }
 
+// ─── Chip (toggleable filter / vibe pill) ─────────────────────────────────────
+
+export function Chip({
+  children, active, onClick, className = "",
+}: { children: React.ReactNode; active?: boolean; onClick?: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+        active
+          ? "bg-ink text-white border-ink"
+          : "bg-white text-ink-soft border-line hover:border-ink hover:text-ink"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 rounded-xl ${className}`} />;
+  return <div className={`animate-pulse bg-ink/6 rounded-xl ${className}`} />;
 }
 
 export function WishlistCardSkeleton() {
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden flex flex-col">
-      <Skeleton className="h-2 rounded-none" />
+    <div className="bg-white rounded-3xl border border-line overflow-hidden flex flex-col">
+      <Skeleton className="h-40 rounded-none" />
       <div className="p-5 flex flex-col gap-3">
-        <div className="flex justify-between">
-          <Skeleton className="w-10 h-10 rounded-xl" />
-          <Skeleton className="w-8 h-8 rounded-full" />
-        </div>
-        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-5 w-3/4" />
         <div className="flex gap-2">
           <Skeleton className="h-5 w-16 rounded-full" />
           <Skeleton className="h-5 w-20 rounded-full" />
         </div>
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-2/3" />
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-10 w-full rounded-2xl" />
+        <Skeleton className="h-6 w-24 mt-2" />
       </div>
     </div>
   );
@@ -98,7 +163,7 @@ export function WishlistCardSkeleton() {
 
 export function DestinationCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-3xl border border-line overflow-hidden">
       <Skeleton className="h-48 w-full rounded-none" />
       <div className="p-4 flex flex-col gap-2">
         <Skeleton className="h-5 w-2/3" />
@@ -107,8 +172,19 @@ export function DestinationCardSkeleton() {
           <Skeleton className="h-5 w-14 rounded-full" />
           <Skeleton className="h-5 w-18 rounded-full" />
         </div>
-        <Skeleton className="h-8 w-full rounded-full mt-2" />
       </div>
+    </div>
+  );
+}
+
+export function Spinner({ className = "" }: { className?: string }) {
+  return <Loader2 className={`animate-spin text-ink-muted ${className}`} />;
+}
+
+export function FullPageSpinner() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <Spinner className="w-8 h-8" />
     </div>
   );
 }
@@ -129,11 +205,11 @@ export function EmptyState({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-20 text-center px-6"
     >
-      <span className="text-5xl mb-4">{emoji}</span>
-      <h3 className="text-xl font-black text-gray-900 mb-2" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
-        {title}
-      </h3>
-      {subtitle && <p className="text-gray-500 text-sm max-w-xs mb-6">{subtitle}</p>}
+      <span className="w-14 h-14 rounded-full bg-cream-deep flex items-center justify-center text-2xl mb-6 grayscale opacity-70" aria-hidden="true">
+        {emoji}
+      </span>
+      <h3 className="text-2xl font-normal text-ink mb-2">{title}</h3>
+      {subtitle && <p className="text-ink-muted text-sm max-w-sm mb-6">{subtitle}</p>}
       {action}
     </motion.div>
   );
@@ -142,27 +218,125 @@ export function EmptyState({
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
 export function PageHeader({
-  label, title, subtitle,
-}: { label?: string; title: string; subtitle?: string }) {
+  label, title, subtitle, children,
+}: { label?: string; title: string; subtitle?: string; children?: React.ReactNode }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="text-center py-12 px-5"
+      className="text-center pt-16 pb-12 px-5"
     >
       {label && (
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{label}</p>
+        <p className="text-[11px] font-medium text-ink-muted uppercase tracking-[0.25em] mb-5">
+          {label}
+        </p>
       )}
-      <h1
-        className="text-3xl md:text-5xl font-black text-gray-900 mb-4"
-        style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
-      >
+      <h1 className="text-4xl md:text-6xl font-light text-ink mb-5 leading-[1.05]">
         {title}
       </h1>
       {subtitle && (
-        <p className="text-gray-500 max-w-xl mx-auto">{subtitle}</p>
+        <p className="text-ink-soft text-base md:text-lg max-w-xl mx-auto">{subtitle}</p>
       )}
+      {children}
     </motion.div>
+  );
+}
+
+// ─── Section (landing / detail page block) ────────────────────────────────────
+
+export function Section({
+  eyebrow, title, subtitle, action, children, className = "", id,
+}: {
+  eyebrow?: string;
+  title: React.ReactNode;
+  subtitle?: string;
+  action?: { label: string; to: string };
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
+  return (
+    <section id={id} className={`py-20 md:py-28 ${className}`}>
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
+          <div className="max-w-2xl">
+            {eyebrow && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-ink-muted mb-4">{eyebrow}</p>
+            )}
+            <h2 className="text-3xl md:text-5xl font-light text-ink leading-[1.08]">{title}</h2>
+            {subtitle && <p className="text-ink-soft mt-3 text-base md:text-lg">{subtitle}</p>}
+          </div>
+          {action && (
+            <Link
+              to={action.to}
+              className="group inline-flex items-center gap-2 text-sm font-medium text-ink shrink-0 border-b border-ink/30 hover:border-ink pb-0.5 transition-colors"
+            >
+              {action.label}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+export function Modal({
+  isOpen, onClose, children, className = "", label,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+  label?: string;
+}) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-100 bg-ink/25 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-5"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={label}
+            initial={{ opacity: 0, y: 40, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.97 }}
+            transition={{ type: "spring", damping: 26, stiffness: 320 }}
+            className={`relative w-full sm:max-w-lg bg-white/85 backdrop-blur-2xl border border-white/70 rounded-t-2xl sm:rounded-2xl shadow-pop-lg max-h-[92vh] overflow-y-auto ${className}`}
+          >
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white border border-line flex items-center justify-center hover:bg-cream-deep transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -171,19 +345,19 @@ export function PageHeader({
 export function SaveButton({
   saved, onToggle, size = "md",
 }: { saved: boolean; onToggle: () => void; size?: "sm" | "md" }) {
-  const s = size === "sm" ? "w-8 h-8" : "w-10 h-10";
+  const s = size === "sm" ? "w-9 h-9" : "w-11 h-11";
   return (
     <motion.button
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.85 }}
       onClick={e => { e.stopPropagation(); e.preventDefault(); onToggle(); }}
-      className={`p-0! ${s} rounded-full flex items-center justify-center transition-all duration-200 ${
-        saved ? "bg-red-100 text-red-500" : "bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400"
+      aria-label={saved ? "Remove from saved" : "Save"}
+      aria-pressed={saved}
+      className={`${s} rounded-full flex items-center justify-center border border-line transition-colors duration-200 ${
+        saved ? "bg-ink text-white border-ink" : "bg-white/90 backdrop-blur text-ink hover:bg-white"
       }`}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
+      <Heart className="w-4 h-4" fill={saved ? "currentColor" : "none"} strokeWidth={1.75} />
     </motion.button>
   );
 }
@@ -193,9 +367,9 @@ export function SaveButton({
 export function StarRating({ value, count }: { value: number; count?: number }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-amber-400 text-sm font-bold">★ {value.toFixed(1)}</span>
+      <span className="text-sun-500 text-sm font-medium">★ {value.toFixed(1)}</span>
       {count !== undefined && (
-        <span className="text-gray-400 text-xs">({count.toLocaleString()})</span>
+        <span className="text-ink-muted text-xs">({count.toLocaleString()})</span>
       )}
     </div>
   );
@@ -221,11 +395,11 @@ export function CountdownTimer({ validUntil }: { validUntil: string }) {
   }, [validUntil]);
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-2xl">
-      <span className="text-amber-500 text-sm">⏳</span>
+    <div className="flex items-center gap-2 px-4 py-2 bg-sun-100 border border-line rounded-2xl">
+      <span className="text-sm">⏳</span>
       <div>
-        <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">Price locked for</p>
-        <p className="text-sm font-black text-amber-700">{remaining}</p>
+        <p className="text-[10px] font-medium text-ink-soft uppercase tracking-wide">Price locked for</p>
+        <p className="text-sm font-semibold text-ink">{remaining}</p>
       </div>
     </div>
   );
@@ -237,16 +411,16 @@ export function SortBar({
   options, value, onChange,
 }: { options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-      <span className="text-xs font-semibold text-gray-400 shrink-0">Sort:</span>
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+      <span className="text-xs font-medium text-ink-muted shrink-0 uppercase tracking-wide">Sort</span>
       {options.map(opt => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+          className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
             value === opt.value
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-ink text-white border-ink"
+              : "bg-white text-ink-soft border-line hover:border-ink"
           }`}
         >
           {opt.label}
@@ -260,9 +434,9 @@ export function SortBar({
 
 export function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide w-32 shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-gray-700 flex-1">{value}</span>
+    <div className="flex items-start gap-3 py-3 border-b border-line last:border-0">
+      <span className="text-xs font-medium text-ink-muted uppercase tracking-wide w-32 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-ink flex-1">{value}</span>
     </div>
   );
 }
@@ -271,10 +445,7 @@ export function InfoRow({ label, value }: { label: string; value: React.ReactNod
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2
-      className="text-xl md:text-2xl font-black text-gray-900 mb-6"
-      style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
-    >
+    <h2 className="text-2xl md:text-3xl font-light text-ink mb-6">
       {children}
     </h2>
   );
@@ -282,16 +453,16 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 
 // ─── ScoreBar ─────────────────────────────────────────────────────────────────
 
-export function ScoreBar({ label, value, max = 5, color = "#6366f1" }: {
+export function ScoreBar({ label, value, max = 5, color = "var(--color-brand-500)" }: {
   label: string; value: number; max?: number; color?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">{label}</span>
-        <span className="text-xs font-bold text-gray-700">{value}/{max}</span>
+        <span className="text-xs font-semibold text-ink-soft">{label}</span>
+        <span className="text-xs font-semibold text-ink">{value}/{max}</span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1 bg-cream-deep rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{ width: `${(value / max) * 100}%`, backgroundColor: color }}

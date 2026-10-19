@@ -1,137 +1,148 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search, Heart, Menu, X, Sparkles, Map, Compass, Users, PlusCircle,
+  LogOut, Briefcase, Luggage, ArrowRight, Settings,
+} from "lucide-react";
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
+import { usePersonalization } from "../../../hooks/v2Hooks/usePersonalization";
 import { ROUTES } from "../../../utils/v2Utils/routes";
+import { loginPath, registerPath } from "../../../utils/v2Utils/authRedirect";
+import { buttonClasses } from "../ui";
+import NotificationBell from "./NotificationBell";
+import { CurrencyButton } from "./CountryPicker";
 
-interface NavBarProps {
-  onForYouClick?: () => void;
-}
+const NAV_LINKS = [
+  { label: "Wishlists", to: ROUTES.PUBLIC.EXPLOREWISHLIST, icon: Map },
+  { label: "Destinations", to: ROUTES.PUBLIC.EXPLOREDESTINATION, icon: Compass },
+  { label: "Trips", to: ROUTES.PUBLIC.BROWSETRIPS, icon: Users },
+];
 
-export default function AppNavBar({ onForYouClick }: NavBarProps) {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+const QUICK_SEARCHES = ["Japan for anime fans", "Couple trips", "Budget food tours", "Beach escapes"];
+
+export default function AppNavBar() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
+  const { openQuiz } = usePersonalization();
 
-  const [scrolled,     setScrolled]    = useState(false);
-  const [mobileOpen,   setMobileOpen]  = useState(false);
-  const [searchOpen,   setSearchOpen]  = useState(false);
-  const [searchQuery,  setSearchQuery] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  const isLanding = location.pathname === "/";
+  const here = location.pathname + location.search;
+  // Over the landing hero the bar starts transparent; everywhere else it's solid.
+  const solid = scrolled || !isLanding || mobileOpen;
+
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
+    const handler = () => setScrolled(window.scrollY > 16);
+    handler();
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => { setMobileOpen(false); setUserMenuOpen(false); }, [location.pathname]);
+  useEffect(() => { setMobileOpen(false); setUserMenuOpen(false); setSearchOpen(false); }, [location.pathname]);
 
-  // Focus search input when opened
   useEffect(() => { if (searchOpen) setTimeout(() => searchRef.current?.focus(), 100); }, [searchOpen]);
 
-  // Close user menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
-        setUserMenuOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSearchOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  const runSearch = (q: string) => {
+    if (!q.trim()) return;
+    navigate(`${ROUTES.PUBLIC.SEARCH}?q=${encodeURIComponent(q.trim())}`);
     setSearchOpen(false);
     setSearchQuery("");
   };
 
-  const isActive = (path: string) =>
-    location.pathname.startsWith(path)
-      ? "text-gray-300 font-semibold"
-      : "text-gray-200 hover:text-gray-300";
+  const handleLogout = async () => {
+    await logout();
+    navigate(ROUTES.PUBLIC.HOME);
+  };
 
-  const NAV_LINKS = [
-    { label: "For You",      action: onForYouClick ?? (() => {}) },
-    { label: "Wishlists",    action: () => navigate(ROUTES.PUBLIC.EXPLOREWISHLIST) },
-    { label: "Destinations", action: () => navigate(ROUTES.PUBLIC.EXPLOREDESTINATION) },
-    { label: "How It Works", action: () => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" }) },
+  const USER_LINKS = [
+    { label: "My trips", to: ROUTES.AUTH.TRIPHUB, icon: Luggage },
+    { label: "My wishlists", to: ROUTES.AUTH.MYWISHLIST, icon: Map },
+    { label: "Saved", to: ROUTES.AUTH.SAVED, icon: Heart },
+    { label: "Plan a trip", to: ROUTES.AUTH.CREATETRIPS, icon: PlusCircle },
+    { label: "Account settings", to: ROUTES.AUTH.ACCOUNT, icon: Settings },
   ];
+
+  const iconBtn =
+    "w-10 h-10 rounded-full flex items-center justify-center border border-line bg-white text-ink hover:bg-cream-deep transition-colors";
 
   return (
     <>
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/90 backdrop-blur-xl shadow-sm border-b border-black/5" : "bg-transparent"
+          solid ? "bg-white/60 backdrop-blur-xl backdrop-saturate-150 border-b border-white/60 shadow-[0_8px_24px_-18px_rgb(20_20_20/0.25)]" : "bg-transparent border-b border-transparent"
         }`}
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
-
           {/* Logo */}
-          <button
-            onClick={() => navigate(ROUTES.PUBLIC.HOME)}
-            className="text-xl font-black tracking-tight text-gray-200 hover:opacity-70 transition-opacity shrink-0"
-            style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
-          >
+          <Link to={ROUTES.PUBLIC.HOME} className="font-display text-2xl font-light tracking-tight text-ink shrink-0">
             Hodrac
-          </button>
+          </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
+            <button
+              onClick={openQuiz}
+              className="px-4 py-2 text-sm text-ink-soft hover:text-ink transition-colors"
+            >
+              For you
+            </button>
             {NAV_LINKS.map(link => (
-              <button
-                key={link.label}
-                onClick={link.action}
-                className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
-                  link.label === "For You"
-                    ? "bg-gray-900 text-white hover:bg-gray-700"
-                    : `${isActive(
-                        link.label === "Wishlists" ? "/explore/wishlists" :
-                        link.label === "Destinations" ? "/explore/destinations" : ""
-                      )} hover:bg-gray-100 rounded-full px-4 py-2`
-                }`}
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                    isActive ? "bg-ink text-white" : "text-ink hover:bg-ink/5"
+                  }`
+                }
               >
                 {link.label}
-              </button>
+              </NavLink>
             ))}
           </nav>
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
-            {/* Search button */}
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="p-0! w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-200 transition-colors"
-              aria-label="Search"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
+            <CurrencyButton className="hidden sm:inline-flex" />
+
+            <button onClick={() => setSearchOpen(true)} className={iconBtn} aria-label="Search">
+              <Search className="w-4 h-4" />
             </button>
 
             {isAuthenticated ? (
               <>
-                {/* Saved */}
-                <button
-                  onClick={() => navigate(ROUTES.AUTH.SAVED)}
-                  className="p-2! hidden md:flex w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-200 transition-colors"
-                  aria-label="Saved"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </button>
+                <NotificationBell enabled={isAuthenticated} />
 
-                {/* User avatar menu */}
-                <div className="relative hidden md:block" ref={userMenuRef}>
+                <div className="relative hidden lg:block" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(o => !o)}
-                    className="w-9 h-9 rounded-full bg-gray-900 text-white text-sm font-bold flex items-center justify-center hover:bg-gray-700 transition-colors"
+                    aria-label="Account menu"
+                    aria-expanded={userMenuOpen}
+                    className="w-10 h-10 rounded-full bg-ink text-white text-sm font-medium flex items-center justify-center hover:bg-ink-soft transition-colors"
                   >
                     {user?.displayName?.charAt(0).toUpperCase() ?? "U"}
                   </button>
@@ -142,32 +153,29 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                         initial={{ opacity: 0, scale: 0.95, y: 8 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                        className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden"
+                        className="absolute right-0 top-13 w-60 bg-white rounded-3xl border border-line shadow-pop-lg py-2 overflow-hidden"
                       >
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{user?.displayName}</p>
-                          <p className="text-xs text-gray-700 truncate">{user?.email}</p>
+                        <div className="px-4 py-3 border-b border-line">
+                          <p className="text-sm font-semibold text-ink truncate">{user?.displayName}</p>
+                          <p className="text-xs text-ink-muted truncate">{user?.email}</p>
                         </div>
-                        {[
-                          { label: "My Wishlists", icon: "🗺️", path: "/my-wishlists" },
-                          { label: "Saved",        icon: "❤️", path: "/saved" },
-                        ].map(item => (
-                          <button
-                            key={item.path}
-                            onClick={() => { navigate(item.path); setUserMenuOpen(false); }}
-                            className="mt-2! w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-50 transition-colors"
+                        {USER_LINKS.map(item => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-ink hover:bg-cream transition-colors"
                           >
-                            <span>{item.icon}</span>
+                            <item.icon className="w-4 h-4" />
                             {item.label}
-                          </button>
+                          </Link>
                         ))}
-                        <div className="border-t border-gray-100 mt-1 pt-1">
+                        <div className="border-t border-line mt-1 pt-1">
                           <button
-                            onClick={async () => { await logout(); navigate(ROUTES.PUBLIC.HOME); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
                           >
-                            <span>🚪</span>
-                            Sign Out
+                            <LogOut className="w-4 h-4" />
+                            Sign out
                           </button>
                         </div>
                       </motion.div>
@@ -176,75 +184,83 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
                 </div>
               </>
             ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <button
-                  onClick={() => navigate(ROUTES.PUBLIC.LOGIN)}
-                  className="text-sm font-medium text-gray-400 hover:text-gray-600 px-3 py-2 transition-colors"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => navigate(ROUTES.PUBLIC.REGISTER)}
-                  className="text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 px-4 py-2 rounded-full transition-colors"
-                >
-                  Get Started
-                </button>
+              <div className="hidden lg:flex items-center gap-2">
+                <Link to={loginPath(here)} className="text-sm font-medium text-ink hover:text-brand-600 px-3 py-2 transition-colors">
+                  Sign in
+                </Link>
+                <Link to={registerPath(here)} className={buttonClasses("primary", "sm")}>
+                  Join free
+                </Link>
               </div>
             )}
 
-            {/* Mobile hamburger */}
+            {/* Mobile menu toggle */}
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`lg:hidden ${iconBtn}`}
               onClick={() => setMobileOpen(o => !o)}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
             >
-              <div className="w-5 flex flex-col gap-1.5">
-                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
-                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
-                <span className={`block h-0.5 bg-gray-200 transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-2" : ""}`} />
-              </div>
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu */}
-        <div className={`md:hidden bg-white border-t border-gray-100 transition-all duration-300 overflow-hidden ${mobileOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="px-5 py-4 flex flex-col gap-1">
-            {NAV_LINKS.map(link => (
-              <button
-                key={link.label}
-                onClick={() => { link.action(); setMobileOpen(false); }}
-                className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden overflow-hidden bg-cream border-t border-line"
+            >
+              <div className="px-5 py-5 flex flex-col gap-2 max-h-[calc(100vh-4rem)] overflow-y-auto">
+                <button
+                  onClick={() => { setMobileOpen(false); openQuiz(); }}
+                  className="flex items-center justify-between px-4 py-4 rounded-xl bg-white border border-line text-ink font-medium"
+                >
+                  <span className="flex items-center gap-3"><Sparkles className="w-5 h-5" strokeWidth={1.5} /> Find my trip</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
 
-            <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2">
-              {isAuthenticated ? (
-                <>
-                  <button onClick={() => navigate(ROUTES.AUTH.MYWISHLIST)} className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl">
-                    🗺️ My Wishlists
-                  </button>
-                  <button onClick={() => navigate(ROUTES.AUTH.SAVED)} className="text-left px-3 py-3 text-sm font-medium text-gray-200 hover:bg-gray-50 rounded-xl">
-                    ❤️ Saved
-                  </button>
-                  <button onClick={async () => { await logout(); navigate(ROUTES.PUBLIC.HOME); }} className="text-left px-3 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl">
-                    🚪 Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => navigate(ROUTES.PUBLIC.LOGIN)} className="w-full text-sm font-semibold text-gray-400 bg-gray-100 py-3 rounded-xl">
-                    Sign In
-                  </button>
-                  <button onClick={() => navigate(ROUTES.PUBLIC.REGISTER)} className="w-full text-sm font-semibold text-white bg-gray-900 py-3 rounded-xl">
-                    Get Started
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+                {NAV_LINKS.map(link => (
+                  <Link key={link.to} to={link.to} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-ink font-medium hover:bg-white">
+                    <link.icon className="w-5 h-5" /> {link.label}
+                  </Link>
+                ))}
+
+                <div className="border-t border-line my-2" />
+
+                {isAuthenticated ? (
+                  <>
+                    {USER_LINKS.map(item => (
+                      <Link key={item.to} to={item.to} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-ink font-semibold hover:bg-white">
+                        <item.icon className="w-5 h-5" /> {item.label}
+                      </Link>
+                    ))}
+                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-red-600 font-semibold hover:bg-red-50 text-left">
+                      <LogOut className="w-5 h-5" /> Sign out
+                    </button>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link to={loginPath(here)} className={buttonClasses("outline", "md")}>Sign in</Link>
+                    <Link to={registerPath(here)} className={buttonClasses("primary", "md")}>Join free</Link>
+                  </div>
+                )}
+
+                <div className="sm:hidden px-4 pt-2">
+                  <CurrencyButton />
+                </div>
+
+                <Link to={ROUTES.PUBLIC.PARTNERS} className="flex items-center gap-3 px-4 py-3 mt-2 rounded-2xl text-ink-soft text-sm font-semibold hover:bg-white">
+                  <Briefcase className="w-4 h-4" /> Hodrac for business
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Search overlay */}
@@ -254,45 +270,44 @@ export default function AppNavBar({ onForYouClick }: NavBarProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-24 px-5"
-            onClick={e => { if (e.target === e.currentTarget) setSearchOpen(false); }}
+            className="fixed inset-0 z-60 bg-ink/25 backdrop-blur-md flex items-start justify-center pt-24 px-5"
+            onMouseDown={e => { if (e.target === e.currentTarget) setSearchOpen(false); }}
           >
             <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.97 }}
-              className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+              className="w-full max-w-xl bg-white/85 backdrop-blur-2xl rounded-2xl border border-white/70 shadow-pop-lg overflow-hidden"
             >
-              <form onSubmit={handleSearch} className="flex items-center gap-3 p-4">
-                <svg className="p-0! text-gray-300 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
+              <form onSubmit={e => { e.preventDefault(); runSearch(searchQuery); }} className="flex items-center gap-3 p-4">
+                <Search className="w-5 h-5 text-ink-muted shrink-0" />
                 <input
                   ref={searchRef}
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search destinations, wishlists, or travel styles..."
-                  className="flex-1 text-gray-300 bg-transparent outline-none text-base placeholder-gray-400"
+                  placeholder="Try “Japan”, “beach”, or “food trip”…"
+                  aria-label="Search"
+                  className="flex-1 text-ink bg-transparent outline-none text-base placeholder:text-ink-muted"
                 />
                 <button
                   type="button"
                   onClick={() => setSearchOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors text-xs"
+                  aria-label="Close search"
+                  className="w-8 h-8 rounded-full bg-cream flex items-center justify-center text-ink hover:bg-cream-deep transition-colors"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </form>
 
-              {/* Quick links */}
-              <div className="px-4 pb-4 border-t border-gray-100 pt-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick explore</p>
+              <div className="px-4 pb-4 border-t border-line pt-3">
+                <p className="text-xs font-medium text-ink-muted uppercase tracking-wider mb-2">Need ideas?</p>
                 <div className="flex flex-wrap gap-2">
-                  {["Japan for Anime Fans", "Couple Trips", "Budget Food Tours", "Luxury Escapes"].map(s => (
+                  {QUICK_SEARCHES.map(s => (
                     <button
                       key={s}
-                      onClick={() => { navigate(`${ROUTES.PUBLIC.SEARCH}?q=${encodeURIComponent(s)}`); setSearchOpen(false); }}
-                      className="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-300 hover:bg-gray-200 transition-colors"
+                      onClick={() => runSearch(s)}
+                      className="px-3 py-1.5 bg-cream border border-line rounded-full text-xs font-semibold text-ink hover:border-ink transition-colors"
                     >
                       {s}
                     </button>

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { wishlistsApi } from "../../../dataStore/v2Api/client";
 import { useFilterOptions, useSavedContent } from "../../../hooks/v2Hooks/useData";
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
 import { WishlistCardComponent } from "../../../components/v2Components/cards/Cards";
 import { WishlistFilterPanel } from "../../../components/v2Components/filters/FilterPanel";
-import { WishlistCardSkeleton, EmptyState, PageHeader, SortBar } from "../../../components/v2Components/ui";
+import { WishlistCardSkeleton, EmptyState, PageHeader, SortBar, Button, Chip } from "../../../components/v2Components/ui";
+import { usePersonalization } from "../../../hooks/v2Hooks/usePersonalization";
+import { Sparkles } from "lucide-react";
 import type { WishlistCard, WishlistFilters, PagedResult } from "../../../types";
 import {useWishlistSignalR } from "../../../hooks/v2Hooks/useSignalR";
 
@@ -15,7 +17,13 @@ export default function ExploreWishlistsPage() {
   const {isAuthenticated }                            = useAuth();
   const { data: filterOptions, loading: filterLoading }      = useFilterOptions();
   const { isWishlistSaved, toggleWishlist}                  = useSavedContent(isAuthenticated);
-  const [filters, setFilters]   = useState<WishlistFilters>(DEFAULT_FILTERS);
+  const { openQuiz } = usePersonalization();
+  // ?vibeTags=Food,Nature (from the quiz / landing page) pre-filters the list.
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters]   = useState<WishlistFilters>(() => {
+    const vibeTags = searchParams.get("vibeTags");
+    return vibeTags ? { ...DEFAULT_FILTERS, vibeTags } : DEFAULT_FILTERS;
+  });
   const [result,  setResult]    = useState<PagedResult<WishlistCard> | null>(null);
   const [loading, setLoading]   = useState(true);
   const [selectedId, setSelectedId] = useState("");
@@ -83,31 +91,24 @@ useWishlistSignalR(
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
+    <div className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
         <PageHeader
-          label="Explore Wishlists"
-          title="Trips designed around real traveler experiences"
-          subtitle="Explore structured wishlists curated for different travel styles, personalities, and budgets."
-        />
+          label="Wishlists"
+          title="Ready-made trips to steal"
+          subtitle="Day-by-day itineraries from real travellers and creators. Pick a vibe, save what you love, make it your own."
+        >
+          <button onClick={openQuiz} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700">
+            <Sparkles className="w-4 h-4" /> Not sure? Take the 60-second quiz
+          </button>
+        </PageHeader>
 
         {/* Psychographic quick-filter tags */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-8 md:flex-wrap md:justify-center md:overflow-visible">
           {PERSONA_TAGS.map(tag => (
-            <motion.button
-              key={tag.label}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => handlePersonaTag(tag)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-medium transition-all ${
-                isPersonaTagActive(tag)
-                  ? "border-gray-900 bg-gray-900 text-white"
-                  : "border-gray-200 text-gray-400 bg-white hover:border-gray-400"
-              }`}
-            >
+            <Chip key={tag.label} active={isPersonaTagActive(tag)} onClick={() => handlePersonaTag(tag)}>
               <span>{tag.emoji}</span>
               <span>{tag.label}</span>
-            </motion.button>
+            </Chip>
           ))}
         </div>
 
@@ -132,7 +133,7 @@ useWishlistSignalR(
 
         {/* Results count */}
         {result && (
-          <p className="text-sm text-gray-400 mb-6">
+          <p className="text-sm font-semibold text-ink-muted mb-6">
             {result.totalCount.toLocaleString()} wishlists found
           </p>
         )}
@@ -148,9 +149,7 @@ useWishlistSignalR(
             title="No wishlists found"
             subtitle="Try adjusting your filters or explore a different travel style."
             action={
-              <button onClick={handleReset} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full">
-                Clear filters
-              </button>
+              <Button onClick={handleReset}>Clear filters</Button>
             }
           />
         ) : (
@@ -173,28 +172,19 @@ useWishlistSignalR(
             {/* Pagination */}
             {result.totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-12">
-                <button
-                  onClick={() => handlePage((filters.page ?? 1) - 1)}
-                  disabled={(filters.page ?? 1) <= 1}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >
+                <Button variant="outline" size="sm" onClick={() => handlePage((filters.page ?? 1) - 1)} disabled={(filters.page ?? 1) <= 1}>
                   ← Previous
-                </button>
-                <span className="text-sm text-gray-500">
+                </Button>
+                <span className="text-sm font-medium text-ink-soft">
                   Page {filters.page} of {result.totalPages}
                 </span>
-                <button
-                  onClick={() => handlePage((filters.page ?? 1) + 1)}
-                  disabled={(filters.page ?? 1) >= result.totalPages}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >
+                <Button variant="outline" size="sm" onClick={() => handlePage((filters.page ?? 1) + 1)} disabled={(filters.page ?? 1) >= result.totalPages}>
                   Next →
-                </button>
+                </Button>
               </div>
             )}
           </>
         )}
-      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import type {
   FilterOptions, WishlistDetail,
   WishlistCard, DestinationSummary, SavedContent, CollaboratorDto,
 } from "../../types";
+import { useRequireAuth } from "./useRequireAuth";
 
 // ─── Generic async hook helper ────────────────────────────────────────────────
 
@@ -150,25 +151,40 @@ export function useSavedContent(isAuthenticated: boolean) {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Saving needs an account: signed-out users are sent to login and back.
+  const requireAuth = useRequireAuth();
+
   const toggleWishlist = useCallback(async (id: string) => {
-    if (savedWishlistIds.has(id)) {
-      await wishlistsApi.unsave(id);
-      setSavedWishlistIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-    } else {
-      await wishlistsApi.save(id);
-      setSavedWishlistIds(prev => new Set([...prev, id]));
-    }
-  }, [savedWishlistIds]);
+    await requireAuth(async () => {
+      try {
+        if (savedWishlistIds.has(id)) {
+          await wishlistsApi.unsave(id);
+          setSavedWishlistIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+        } else {
+          await wishlistsApi.save(id);
+          setSavedWishlistIds(prev => new Set([...prev, id]));
+        }
+      } catch (error) {
+        console.error("Failed to update saved wishlist", error);
+      }
+    });
+  }, [savedWishlistIds, requireAuth]);
 
   const toggleDestination = useCallback(async (id: string) => {
-    if (savedDestinationIds.has(id)) {
-      await destinationsApi.unsave(id);
-      setSavedDestinationIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-    } else {
-      await destinationsApi.save(id);
-      setSavedDestinationIds(prev => new Set([...prev, id]));
-    }
-  }, [savedDestinationIds]);
+    await requireAuth(async () => {
+      try {
+        if (savedDestinationIds.has(id)) {
+          await destinationsApi.unsave(id);
+          setSavedDestinationIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+        } else {
+          await destinationsApi.save(id);
+          setSavedDestinationIds(prev => new Set([...prev, id]));
+        }
+      } catch (error) {
+        console.error("Failed to update saved destination", error);
+      }
+    });
+  }, [savedDestinationIds, requireAuth]);
 
   return {
     data, loading,

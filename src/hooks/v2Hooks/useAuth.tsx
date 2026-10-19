@@ -1,9 +1,12 @@
 import {
-  createContext, useContext, useState, useEffect, useCallback,
+  createContext, useContext, useState, useEffect, useCallback, useRef,
   type ReactNode,
 } from "react";
-import { authApi, tokenStore } from "../../dataStore/v2Api/client";
+import { useNavigate } from "react-router-dom";
+import { authApi, onUnauthorized, tokenStore } from "../../dataStore/v2Api/client";
+import { currentPath, loginPath } from "../../utils/v2Utils/authRedirect";
 import type { UserDto } from "../../types";
+import { stopHubConnections } from "../../utils/v2Utils/signalR_connection";
 
 // ─── Context shape ────────────────────────────────────────────────────────────
 
@@ -36,6 +39,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Session expired mid-use (refresh failed): sign out and send to login,
+  // returning to the current page afterwards.
+  // A stale session found during the initial restore just signs out quietly.
+  const navigate = useNavigate();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+  useEffect(() => onUnauthorized(() => {
+    const wasSignedIn = !!userRef.current;
+    stopHubConnections();
+    setUser(null);
+    if (wasSignedIn && !window.location.pathname.startsWith("/auth/")) {
+      navigate(loginPath(currentPath()), { replace: true });
+    }
+  }), [navigate]);
+
   const login = useCallback(async (email: string, password: string) => {
     const auth = await authApi.login(email, password);
     tokenStore.set(auth);
@@ -57,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.logout(userId, refreshToken).catch(() => {});
     }
     tokenStore.clear();
+    await stopHubConnections();
     setUser(null);
   }, []);
 

@@ -1,124 +1,79 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, ChevronDown, Users, UsersRound, Check, Train, ExternalLink, Map, Image as ImageIcon,
+} from "lucide-react";
 import { useWishlistDetail, useSimilarWishlists, useSavedContent, useDestinationsInWishlist } from "../../../hooks/v2Hooks/useData";
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
-import { wishlistsApi } from "../../../dataStore/v2Api/client";
 import {
-  Button, SaveButton, CountdownTimer, SectionTitle,
+  Button, SaveButton, CountdownTimer, SectionTitle, Badge,
   Skeleton, EmptyState, WishlistCardSkeleton, DestinationCardSkeleton,
 } from "../../../components/v2Components/ui";
-import { WishlistCardComponent } from "../../../components/v2Components/cards/Cards";
-import { DestinationCardComponent } from "../../../components/v2Components/cards/Cards";
+import { WishlistCardComponent, DestinationCardComponent } from "../../../components/v2Components/cards/Cards";
+import { PartnerBadge, PartnerBookingButton } from "../../../components/v2Components/partner/Partner";
+import TripsForPlace from "../../../components/v2Components/tripPost/TripsForPlace";
 import type { ItineraryDay, ItineraryItem, WishlistCreatorAttributionDto } from "../../../types";
 import { useWishlistSignalR } from "../../../hooks/v2Hooks/useSignalR";
-
-// ─── Itinerary item ───────────────────────────────────────────────────────────
+import { colourwayFor } from "../../../utils/v2Utils/format";
+import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 
 const PLATFORM_ICONS: Record<string, string> = {
-  YouTube:    "▶",
-  Instagram:  "📷",
-  TikTok:     "🎵",
-  Blog:       "✍️",
-  "Twitter/X":"𝕏",
-  Podcast:    "🎙️",
+  YouTube: "▶",
+  Instagram: "📷",
+  TikTok: "🎵",
+  Blog: "✍️",
+  "Twitter/X": "𝕏",
+  Podcast: "🎙️",
 };
 
-// ─── Creator attribution card ─────────────────────────────────────────────────
+// ─── Creator attribution ──────────────────────────────────────────────────────
 
 function CreatorAttributionCard({ attribution }: { attribution: WishlistCreatorAttributionDto }) {
   const { creator } = attribution;
   const icon = PLATFORM_ICONS[creator.platformName] ?? "🔗";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-start gap-4 p-4 bg-linear-to-r from-gray-50 to-white
-                 border border-gray-100 rounded-2xl"
-    >
-      {/* Avatar */}
+    <div className="flex items-start gap-4 p-4 bg-white border border-line rounded-3xl shadow-pop-sm">
       {creator.avatarUrl ? (
-        <img
-          src={creator.avatarUrl}
-          alt={creator.displayName}
-          className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-200"
-        />
+        <img src={creator.avatarUrl} alt={creator.displayName} className="w-12 h-12 rounded-full object-cover shrink-0 border border-line" />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center
-                        text-lg font-bold text-gray-500 shrink-0">
+        <div className="w-12 h-12 rounded-full bg-grape-500 border border-line flex items-center justify-center text-lg font-semibold text-white shrink-0">
           {creator.displayName.charAt(0).toUpperCase()}
         </div>
       )}
 
       <div className="flex-1 min-w-0">
-        {/* Name + verified badge */}
         <div className="flex items-center gap-2 flex-wrap">
-          <a
-            href={creator.profileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-gray-900 text-sm hover:underline truncate"
-          >
+          <a href={creator.profileUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-ink text-sm hover:underline truncate">
             {creator.displayName}
           </a>
-          {creator.isVerified && (
-            <span className="text-[10px] font-semibold bg-blue-50 text-blue-600
-                             px-2 py-0.5 rounded-full shrink-0">
-              ✓ Verified
-            </span>
-          )}
+          {creator.isVerified && <Badge tone="sky">✓ Verified</Badge>}
         </div>
-
-        {/* Handle + platform */}
-        <p className="text-xs text-gray-400 mt-0.5">
-          {icon} @{creator.handle} · {creator.platformName}
-        </p>
-
-        {/* Bio */}
-        {creator.bio && (
-          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
-            {creator.bio}
-          </p>
-        )}
-
-        {/* Original content link */}
+        <p className="text-xs text-ink-muted mt-0.5">{icon} @{creator.handle} · {creator.platformName}</p>
+        {creator.bio && <p className="text-xs text-ink-soft mt-1.5 line-clamp-2 leading-relaxed">{creator.bio}</p>}
         {attribution.originalContentUrl && (
           <a
             href={attribution.originalContentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium
-                       text-gray-500 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-brand-600 hover:text-brand-700"
           >
-            <span>🔗</span>
-            <span>View original content</span>
+            Watch the original <ExternalLink className="w-3 h-3" />
           </a>
         )}
       </div>
-
-      {/* Permission badge */}
-      <div className="shrink-0">
-        <span className="text-[10px] font-semibold uppercase tracking-wide
-                         bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">
-          ✓ Licensed
-        </span>
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
-// ─── Creator attribution section ──────────────────────────────────────────────
-
-function CreatorAttributionSection({
-  attributions,
-}: { attributions: WishlistCreatorAttributionDto[] }) {
+function CreatorAttributionSection({ attributions }: { attributions: WishlistCreatorAttributionDto[] }) {
   if (!attributions || attributions.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        {attributions.length === 1 ? "Based on content by" : "Content creators"}
+      <p className="text-xs font-medium text-ink-muted uppercase tracking-widest">
+        {attributions.length === 1 ? "Inspired by" : "Inspired by these creators"}
       </p>
       {attributions.map(a => (
         <CreatorAttributionCard key={a.wishlistCreatorAttributionId} attribution={a} />
@@ -127,59 +82,52 @@ function CreatorAttributionSection({
   );
 }
 
-// ─── Itinerary item ───────────────────────────────────────────────────────────
+// ─── Itinerary ────────────────────────────────────────────────────────────────
 
 function ItineraryItemRow({ item }: { item: ItineraryItem }) {
+  const { formatPrice } = useCurrency();
   const [expanded, setExpanded] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   return (
     <div
       className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-        item.isSelectedByDefault ? "border-gray-200 bg-white" : "border-dashed border-gray-200 bg-gray-50"
+        item.isSelectedByDefault ? "border-line bg-white" : "border-dashed border-line bg-cream"
       }`}
     >
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-start gap-3 p-4 text-left"
-      >
-        {item.imageUrl != null && item.imageUrl != "" ? (
+      <button onClick={() => setExpanded(e => !e)} aria-expanded={expanded} className="w-full flex items-start gap-3 p-3.5 text-left">
+        {/* No lazy-loading: day panels open with a height animation from 0,
+            which can stop lazy images from ever being fetched. */}
+        {item.imageUrl && !imgFailed ? (
           <img
             src={item.imageUrl}
             alt={item.title}
-            className="w-14 h-14 rounded-xl object-cover shrink-0"
+            onError={() => setImgFailed(true)}
+            className="w-20 h-20 rounded-xl object-cover shrink-0 bg-cream-deep"
           />
-        ): (<div className="w-14 h-14 rounded-xl object-cover shrink-0 object-center text-2xl">🧳</div>)}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{item.timeOfDay}</span>
-            {item.isOptional && (
-              <span className="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-semibold">Optional</span>
-            )}
-            {item.socialProofBadge && (
-              <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-semibold">
-                ⭐ {item.socialProofBadge}
-              </span>
-            )}
+        ) : (
+          <div className="w-20 h-20 rounded-xl bg-cream-deep shrink-0 flex items-center justify-center">
+            <ImageIcon className="w-6 h-6 text-ink-muted" strokeWidth={1.25} />
           </div>
-          <p className="font-semibold text-gray-300 text-sm mt-0.5">{item.title}</p>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-medium text-ink-muted uppercase tracking-wider">{item.timeOfDay}</span>
+            {item.isOptional && <Badge tone="sky">Optional</Badge>}
+            {item.socialProofBadge && <Badge tone="sun">⭐ {item.socialProofBadge}</Badge>}
+          </div>
+          <p className="font-medium text-ink text-sm mt-0.5">{item.title}</p>
           {item.costModifier > 0 && (
-            <p className="text-xs text-emerald-600 font-medium mt-0.5">+${item.costModifier.toLocaleString()}</p>
+            <p className="text-xs text-mint-500 font-medium mt-0.5">+{formatPrice(item.costModifier)}</p>
           )}
         </div>
-        <span className={`text-gray-400 transition-transform duration-200 text-sm shrink-0 mt-1 ${expanded ? "rotate-180" : ""}`}>▼</span>
+        <ChevronDown className={`w-4 h-4 text-ink-muted transition-transform duration-200 shrink-0 mt-1 ${expanded ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence>
         {expanded && item.description && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <p className="px-4 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
-              {item.description}
-            </p>
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <p className="px-4 pb-4 text-sm text-ink-soft leading-relaxed border-t border-line pt-3">{item.description}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -187,58 +135,51 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
   );
 }
 
-// ─── Itinerary day ────────────────────────────────────────────────────────────
-
 function ItineraryDayCard({ day }: { day: ItineraryDay }) {
+  const { formatPrice } = useCurrency();
   const [open, setOpen] = useState(day.dayNumber === 1);
+  const cities = [day.morningCity, day.afternoonCity, day.eveningCity]
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(" → ");
 
   return (
-    <div className="border border-gray-100 rounded-3xl overflow-hidden bg-white">
+    <div className="border border-line rounded-3xl overflow-hidden bg-white">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-cream transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shrink-0">
-            {day.dayNumber}
+          <div className="w-11 h-11 rounded-full bg-cream border border-line text-ink flex flex-col items-center justify-center shrink-0 leading-none">
+            <span className="text-[8px] uppercase tracking-wider text-ink-muted">Day</span>
+            <span className="text-base font-semibold">{day.dayNumber}</span>
           </div>
           <div>
-            <p className="font-bold text-gray-300 text-sm">{day.dayTitle}</p>
-            <p className="text-xs text-gray-400">
-              {[day.morningCity, day.afternoonCity, day.eveningCity]
-                .filter(Boolean)
-                .filter((v, i, a) => a.indexOf(v) === i)
-                .join(" → ")}
-            </p>
+            <p className="font-display font-normal text-ink">{day.dayTitle}</p>
+            {cities && <p className="text-xs text-ink-muted">{cities}</p>}
           </div>
         </div>
-        <span className={`text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
+        <ChevronDown className={`w-5 h-5 text-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            {/* Transit notice */}
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             {day.transitFromPreviousDay && (
-              <div className="mx-5 mb-3 mt-1 px-3 py-2 bg-blue-50 rounded-xl text-xs text-blue-700 font-medium flex items-center gap-2">
-                <span>🚄</span>
+              <div className="mx-5 mb-3 mt-1 px-3 py-2 bg-sky-100 rounded-xl text-xs text-ink font-semibold flex items-center gap-2">
+                <Train className="w-4 h-4 shrink-0" />
                 <span>
                   {day.transitFromPreviousDay.transitType} from {day.transitFromPreviousDay.fromCity} → {day.transitFromPreviousDay.toCity}
                   {" · "}{day.transitFromPreviousDay.durationMinutes} min
-                  {" · "}${day.transitFromPreviousDay.costPerPerson}/person
+                  {" · "}{formatPrice(day.transitFromPreviousDay.costPerPerson)}/person
                 </span>
               </div>
             )}
-
-            <div className="px-5 pb-5 flex flex-col gap-3">
-              {day.items.map(item => (
-                <ItineraryItemRow key={item.itemId} item={item} />
-              ))}
+            <div className="px-5 pb-5 flex flex-col gap-2.5">
+              {[...day.items]
+                .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+                .map(item => <ItineraryItemRow key={item.itemId} item={item} />)}
             </div>
           </motion.div>
         )}
@@ -250,150 +191,113 @@ function ItineraryDayCard({ day }: { day: ItineraryDay }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function WishlistDetailPage() {
+  const { formatPrice, formatUsd, isConverted, currency } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated} = useAuth();
+  const { isAuthenticated } = useAuth();
   const { data: wishlist, loading, error, refetch } = useWishlistDetail(id!);
   const { data: similar, loading: similarLoading } = useSimilarWishlists(id!);
   const [pageNumber, setPageNumber] = useState(1);
   const { data: destinations, loading: destLoading } = useDestinationsInWishlist(id!, pageNumber);
   const { isWishlistSaved, toggleWishlist, isDestinationSaved, toggleDestination } = useSavedContent(isAuthenticated);
-  useWishlistSignalR(
-  id!,
-  {onWishlistUpdated: () => {
-    refetch();
-  }
-});
+  useWishlistSignalR(id!, { onWishlistUpdated: () => { refetch(); } });
 
-  const [forking,    setForking]    = useState(false);
-  const [forkError,  setForkError]  = useState("");
-  const [activeTab,  setActiveTab]  = useState<"itinerary" | "inclusions" | "info">("itinerary");
-  const [travelers,  setTravelers]  = useState(2);
-  // const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"itinerary" | "inclusions" | "info">("itinerary");
+  const [travelers, setTravelers] = useState(2);
 
   if (loading) return <WishlistDetailSkeleton />;
   if (error || !wishlist) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <EmptyState emoji="😕" title="Wishlist not found" subtitle="This wishlist may have been removed." action={<Button onClick={() => navigate(-1)}>Go back</Button>} />
-    </div>
+    <EmptyState
+      emoji="😕"
+      title="Wishlist not found"
+      subtitle="This wishlist may have been removed."
+      action={<Button onClick={() => navigate(-1)}>Go back</Button>}
+    />
   );
 
-  const handleFork = async () => {
-    if (!isAuthenticated) { navigate("/auth/login"); return; }
-    setForking(true);
-    setForkError("");
-    try {
-      const res = await wishlistsApi.fork(wishlist.wishlistId);
-      navigate(`/my-wishlists/${res.newWishlistId}/edit`);
-    } catch (e: any) {
-      setForkError(e.message ?? "Could not create your copy. Try again.");
-    } finally {
-      setForking(false);
-    }
-  };
-  console.log(wishlist)
+  const scrollToTrips = () => document.getElementById("trips")?.scrollIntoView({ behavior: "smooth" });
 
-  // const handleCreateSnapshot = async () => {
-  //   setSnapshotLoading(true);
-  //   try {
-  //     await wishlistsApi.createSnapshot(wishlist.wishlistId, travelers);
-  //     window.location.reload();
-  //   } finally {
-  //     setSnapshotLoading(false);
-  //   }
-  // };
-
-  const totalEstimate = (wishlist.basePricePerPerson * travelers).toLocaleString();
+  const partner = wishlist.partner ?? null;
+  const colour = colourwayFor(wishlist.wishlistId);
+  const totalEstimate = formatPrice(wishlist.basePricePerPerson * travelers);
+  const partnerCtx = { entityType: "wishlist" as const, entityId: wishlist.wishlistId, entityTags: wishlist.psychologicalVibeTags };
   const TABS = [
-    { key: "itinerary",   label: "Itinerary" },
-    { key: "inclusions",  label: "Inclusions" },
-    { key: "info",        label: "About" },
+    { key: "itinerary", label: "Day by day" },
+    { key: "inclusions", label: "What's included" },
+    { key: "info", label: "Good to know" },
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="pb-24 lg:pb-0">
       {/* Hero */}
-      <div className="relative h-72 md:h-96 overflow-hidden bg-gray-900">
-        {wishlist.wishlistHeroImage && (
-          <img
-            src={wishlist.wishlistHeroImage}
-            alt={wishlist.wishlistName}
-            className="w-full h-full object-cover opacity-60"
-          />
-        )}
-        <div className="absolute inset-0 bg-linear-to-t from-gray-900 via-gray-900/50 to-transparent" />
-
-        {/* Back button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-5 left-5 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-        >
-          ←
-        </button>
-
-        {/* Save button */}
-        <div className="absolute top-5 right-5">
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-1">
-            <SaveButton
-              saved={isWishlistSaved(wishlist.wishlistId)}
-              onToggle={() => toggleWishlist(wishlist.wishlistId)}
-            />
-          </div>
+      <div className="max-w-7xl mx-auto px-5 md:px-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+          <SaveButton saved={isWishlistSaved(wishlist.wishlistId)} onToggle={() => toggleWishlist(wishlist.wishlistId)} />
         </div>
 
-        {/* Hero content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-          <div className="flex flex-wrap gap-2 mb-3">
-            {wishlist.psychologicalVibeTags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">
-                {tag}
-              </span>
-            ))}
+        <div className={`relative aspect-16/9 md:aspect-21/9 rounded-2xl overflow-hidden ${colour.bg}`}>
+          {wishlist.wishlistHeroImage ? (
+            <img src={wishlist.wishlistHeroImage} alt={wishlist.wishlistName} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Map className="w-12 h-12 text-ink-muted" strokeWidth={1} />
+            </div>
+          )}
+        </div>
+
+        <div className="max-w-3xl pt-10 pb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-5">
+            {partner && <PartnerBadge partner={partner} />}
+            {wishlist.isFeatured && <Badge tone="neutral">Featured</Badge>}
           </div>
-          <h1
-            className="text-2xl md:text-4xl font-black text-white leading-tight mb-2"
-            style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
-          >
+          <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-ink-muted mb-4">
+            {[`${wishlist.totalDays} days`, wishlist.peopleType, ...wishlist.psychologicalVibeTags.slice(0, 2)].filter(Boolean).join("  ·  ")}
+          </p>
+          <h1 className="text-4xl md:text-6xl font-light text-ink leading-[1.05]">
             {wishlist.wishlistName}
           </h1>
-          <p className="text-white/70 text-sm">
-            {wishlist.totalDays} days · {wishlist.peopleType} · ❤️ {wishlist.totalGlobalSaveCount.toLocaleString()} saves
+          <p className="mt-4 text-sm text-ink-muted">
+            Saved by {wishlist.totalGlobalSaveCount.toLocaleString()} travellers
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 md:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* ── Left: main content ── */}
-          <div className="lg:col-span-2 flex flex-col gap-8">
-
-            {/* Short story */}
-            {wishlist.shortStory && (
-              <p className="text-gray-500 italic text-lg leading-relaxed border-l-4 border-gray-200 pl-4">
-                "{wishlist.shortStory}"
-              </p>
+          <div className="lg:col-span-2 flex flex-col gap-12 min-w-0">
+            {(wishlist.shortStory || wishlist.wishlistDescription) && (
+              <div className="flex flex-col gap-4">
+                {wishlist.shortStory && (
+                  <p className="font-display text-2xl md:text-3xl font-light italic text-ink leading-snug">
+                    “{wishlist.shortStory}”
+                  </p>
+                )}
+                {wishlist.wishlistDescription && (
+                  <p className="text-ink-soft leading-relaxed text-base md:text-lg">{wishlist.wishlistDescription}</p>
+                )}
+              </div>
             )}
 
-            {/* Description */}
-            {wishlist.wishlistDescription && (
-              <p className="text-gray-700 leading-relaxed">{wishlist.wishlistDescription}</p>
-            )}
-
-            {/* Creator attribution — only shown when the wishlist is based on a creator's content */}
             <CreatorAttributionSection attributions={wishlist.creatorAttributions ?? []} />
 
             {/* Tabs */}
             <div>
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-6 w-fit">
+              <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar" role="tablist">
                 {TABS.map(tab => (
                   <button
                     key={tab.key}
+                    role="tab"
+                    aria-selected={activeTab === tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                      activeTab === tab.key
-                        ? "bg-white text-gray-300 shadow-sm"
-                        : "text-gray-400 hover:text-gray-700"
+                    className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                      activeTab === tab.key ? "bg-ink text-white border-ink" : "bg-white text-ink border-line hover:border-ink"
                     }`}
                   >
                     {tab.label}
@@ -401,39 +305,37 @@ export default function WishlistDetailPage() {
                 ))}
               </div>
 
-              {/* Itinerary tab */}
               {activeTab === "itinerary" && (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                   {wishlist.itineraryDays.length === 0 ? (
-                    <EmptyState emoji="📅" title="Itinerary coming soon" subtitle="This wishlist is being built." />
+                    <EmptyState emoji="📅" title="Itinerary coming soon" subtitle="This wishlist is still being built." />
                   ) : (
-                    wishlist.itineraryDays.map(day => (
-                      <ItineraryDayCard key={day.dayNumber} day={day} />
-                    ))
+                    [...wishlist.itineraryDays]
+                      .sort((a, b) => a.dayNumber - b.dayNumber)
+                      .map(day => <ItineraryDayCard key={day.dayId ?? day.dayNumber} day={day} />)
                   )}
                 </div>
               )}
 
-              {/* Inclusions tab */}
               {activeTab === "inclusions" && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { label: "🏨 Accommodation", text: wishlist.accommodationInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("hotel")) },
-                    { label: "🚄 Transit",        text: wishlist.transitInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("train")) },
-                    { label: "🎯 Activities",     text: wishlist.activityInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("activ")) },
+                    { label: "Stay", text: wishlist.accommodationInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("hotel")), bg: "bg-white" },
+                    { label: "Getting around", text: wishlist.transitInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("train")), bg: "bg-white" },
+                    { label: "Things to do", text: wishlist.activityInclusions ?? wishlist.globalInclusions.find(i => i.toLowerCase().includes("activ")), bg: "bg-white" },
                   ].filter(s => s.text).map(section => (
-                    <div key={section.label} className="bg-white rounded-2xl border border-gray-100 p-4">
-                      <p className="font-semibold text-gray-900 text-sm mb-2">{section.label}</p>
-                      <p className="text-xs text-gray-600 leading-relaxed">{section.text}</p>
+                    <div key={section.label} className={`${section.bg} rounded-3xl border border-line p-5`}>
+                      <p className="font-display font-normal text-ink mb-2">{section.label}</p>
+                      <p className="text-sm text-ink-soft leading-relaxed">{section.text}</p>
                     </div>
                   ))}
                   {wishlist.globalInclusions.length > 0 && (
-                    <div className="md:col-span-3 bg-white rounded-2xl border border-gray-100 p-4">
-                      <p className="font-semibold text-gray-900 text-sm mb-3">Everything included</p>
+                    <div className="md:col-span-3 bg-white rounded-3xl border border-line p-5">
+                      <p className="font-display font-normal text-ink mb-3">Everything included</p>
                       <ul className="flex flex-wrap gap-2">
                         {wishlist.globalInclusions.map(item => (
-                          <li key={item} className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
-                            <span className="text-emerald-500 text-[10px]">✓</span> {item}
+                          <li key={item} className="flex items-center gap-1.5 text-sm text-ink bg-cream border border-line px-3 py-1.5 rounded-full">
+                            <Check className="w-3.5 h-3.5 text-ink-muted" strokeWidth={2} /> {item}
                           </li>
                         ))}
                       </ul>
@@ -442,34 +344,36 @@ export default function WishlistDetailPage() {
                 </div>
               )}
 
-              {/* Info tab */}
               {activeTab === "info" && (
-                <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
+                <div className="bg-white rounded-3xl border border-line p-5 flex flex-col">
                   {[
-                    { label: "Traveler type",    value: wishlist.peopleType },
-                    { label: "Trip length",      value: `${wishlist.totalDays} days` },
-                    { label: "Target persona",   value: wishlist.primaryPersonaTarget },
-                    { label: "Vibe",             value: wishlist.psychologicalVibeTags.join(", ") },
-                    { label: "Default travelers",value: wishlist.defaultTravelersCount },
+                    { label: "Best for", value: wishlist.peopleType },
+                    { label: "Trip length", value: `${wishlist.totalDays} days` },
+                    { label: "Made for", value: wishlist.primaryPersonaTarget },
+                    { label: "Vibe", value: wishlist.psychologicalVibeTags.join(", ") },
+                    { label: "Priced for", value: wishlist.defaultTravelersCount ? `${wishlist.defaultTravelersCount} travellers` : "" },
                   ].filter(r => r.value).map(row => (
-                    <div key={row.label} className="flex items-start gap-4 py-3 border-b border-gray-50 last:border-0">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide w-36 shrink-0">{row.label}</span>
-                      <span className="text-sm text-gray-700">{String(row.value)}</span>
+                    <div key={row.label} className="flex items-start gap-4 py-3 border-b border-line last:border-0">
+                      <span className="text-xs font-medium text-ink-muted uppercase tracking-wide w-28 shrink-0 pt-0.5">{row.label}</span>
+                      <span className="text-sm font-semibold text-ink">{String(row.value)}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Similar destinations */}
+            {/* Trips to this wishlist */}
+            <TripsForPlace wishlistId={wishlist.wishlistId} placeName={wishlist.wishlistName} />
+
+            {/* Destinations */}
             <div>
-              <SectionTitle>Destinations in this wishlist</SectionTitle>
+              <SectionTitle>The places you'll go</SectionTitle>
               {destLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {Array.from({ length: 3 }).map((_, i) => <DestinationCardSkeleton key={i} />)}
                 </div>
               ) : destinations && destinations.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {destinations.map((d, i) => (
                     <DestinationCardComponent
                       key={d.destinationId}
@@ -480,153 +384,138 @@ export default function WishlistDetailPage() {
                     />
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-sm text-ink-muted">No more destinations to show.</p>
+              )}
 
-              <div className="flex items-center justify-center gap-2 mt-12">
-                <button
-                  onClick={() => setPageNumber((pageNumber) - 1)}
-                  disabled={pageNumber <= 1}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >
-                  ← Previous
-                </button>
-                
-                <button
-                  onClick={() => setPageNumber((pageNumber) + 1)}
-                  disabled={destinations == null || destinations.length == 0}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >
-                  Next →
-                </button>
-              </div>
+              {(pageNumber > 1 || (destinations?.length ?? 0) > 0) && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <Button variant="outline" size="sm" onClick={() => setPageNumber(p => p - 1)} disabled={pageNumber <= 1}>
+                    ← Previous
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setPageNumber(p => p + 1)} disabled={!destinations || destinations.length === 0}>
+                    Next →
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Similar wishlists */}
-            <div>
-              <SectionTitle>Similar wishlists</SectionTitle>
-              {similarLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {Array.from({ length: 2 }).map((_, i) => <WishlistCardSkeleton key={i} />)}
-                </div>
-              ) : similar && similar.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {similar.slice(0, 4).map((w, i) => (
-                    <WishlistCardComponent
-                      key={w.wishlistId}
-                      wishlist={w}
-                      saved={isWishlistSaved(w.wishlistId)}
-                      onToggleSave={() => toggleWishlist(w.wishlistId)}
-                      index={i}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            {(similarLoading || (similar && similar.length > 0)) && (
+              <div>
+                <SectionTitle>If you like this, try…</SectionTitle>
+                {similarLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {Array.from({ length: 2 }).map((_, i) => <WishlistCardSkeleton key={i} />)}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {similar!.slice(0, 4).map((w, i) => (
+                      <WishlistCardComponent
+                        key={w.wishlistId}
+                        wishlist={w}
+                        saved={isWishlistSaved(w.wishlistId)}
+                        onToggleSave={() => toggleWishlist(w.wishlistId)}
+                        index={i}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Right: sticky sidebar ── */}
-          <div className="lg:col-span-1">
+          <aside className="lg:col-span-1">
             <div className="sticky top-24 flex flex-col gap-4">
-
-              {/* Pricing card */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+              <div className="bg-white rounded-2xl border border-line shadow-pop-lg p-6 flex flex-col gap-5">
                 <div>
-                  <p className="text-3xl font-black text-gray-900">
-                    ${wishlist.basePricePerPerson.toLocaleString()}
+                  <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">From</p>
+                  <p className="font-display text-4xl font-light text-ink">
+                    {formatPrice(wishlist.basePricePerPerson)}
+                    <span className="font-sans text-sm text-ink-muted"> / person</span>
                   </p>
-                  <p className="text-sm text-gray-400">per person</p>
                 </div>
 
-                {/* Traveler count */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Travelers</p>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setTravelers(t => Math.max(1, t - 1))}
-                      className="w-9 h-9 rounded-full border-2 border-gray-200 text-gray-600 font-bold hover:border-gray-900 transition-colors"
-                    >−</button>
-                    <span className="font-bold text-gray-900 w-6 text-center">{travelers}</span>
-                    <button
-                      onClick={() => setTravelers(t => t + 1)}
-                      className="w-9 h-9 rounded-full border-2 border-gray-200 text-gray-600 font-bold hover:border-gray-900 transition-colors"
-                    >+</button>
+                <div className="flex items-center justify-between bg-cream rounded-2xl p-4 border border-line">
+                  <div>
+                    <p className="text-xs font-medium text-ink-muted">Travellers</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <button
+                        onClick={() => setTravelers(t => Math.max(1, t - 1))}
+                        aria-label="Fewer travellers"
+                        className="w-8 h-8 rounded-full border border-line bg-white text-ink font-semibold hover:bg-cream-deep"
+                      >−</button>
+                      <span className="font-semibold text-ink w-5 text-center">{travelers}</span>
+                      <button
+                        onClick={() => setTravelers(t => t + 1)}
+                        aria-label="More travellers"
+                        className="w-8 h-8 rounded-full border border-line bg-white text-ink font-semibold hover:bg-cream-deep"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-ink-muted">Est. total</p>
+                    <p className="font-display text-2xl font-normal text-ink">{totalEstimate}</p>
                   </div>
                 </div>
 
-                {/* Total estimate */}
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">Estimated total</p>
-                  <p className="text-xl font-black text-gray-900">${totalEstimate}</p>
-                  <p className="text-xs text-gray-400">for {travelers} traveler{travelers > 1 ? "s" : ""}</p>
-                </div>
-
-                {/* Countdown if snapshot exists */}
-                {wishlist.activePricingSnapshot && (
-                  <CountdownTimer validUntil={wishlist.activePricingSnapshot.validUntil} />
-                )}
-
-                {/* Deposit */}
-                {wishlist.depositAmountRequired > 0 && (
-                  <p className="text-xs text-gray-400 text-center">
-                    Secure your spot with a ${wishlist.depositAmountRequired.toLocaleString()} deposit
+                {isConverted && (
+                  <p className="text-[11px] text-ink-muted -mt-2">
+                    Shown in {currency}, converted from {formatUsd(wishlist.basePricePerPerson)} at today's rate. Final price is set by the provider.
                   </p>
                 )}
 
-                {/* Lock price button
-                {!wishlist.activePricingSnapshot && (
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    loading={snapshotLoading}
-                    onClick={handleCreateSnapshot}
-                  >
-                    🔒 Lock this price
+                {wishlist.activePricingSnapshot && <CountdownTimer validUntil={wishlist.activePricingSnapshot.validUntil} />}
+
+                <div className="flex flex-col gap-2.5">
+                  {partner && <PartnerBookingButton partner={partner} {...partnerCtx} />}
+
+                  <Button variant={partner ? "outline" : "primary"} size="lg" fullWidth onClick={scrollToTrips}>
+                    <UsersRound className="w-4 h-4" /> Find travel buddies
                   </Button>
-                )} */}
+                </div>
 
-                {/* Fork CTA */}
-                <Button
-                  variant="primary"
-                  fullWidth
-                  loading={forking}
-                  onClick={handleFork}
-                >
-                  {isAuthenticated ? "Customise this trip →" : "Sign in to customise"}
-                </Button>
-
-                {forkError && (
-                  <p className="text-xs text-red-500 text-center">{forkError}</p>
+                {wishlist.depositAmountRequired > 0 && (
+                  <p className="text-xs text-ink-muted text-center">
+                    Secure your spot with a {formatPrice(wishlist.depositAmountRequired)} deposit
+                  </p>
                 )}
 
-                {/* Collaborators shortcut */}
+                {partner && (
+                  <p className="text-[11px] text-ink-muted text-center leading-snug">
+                    Booking happens on {partner.name}'s site. Hodrac may earn a referral fee.
+                  </p>
+                )}
+
                 {(wishlist.isUserOwner || wishlist.isCollaborator) && (
                   <button
                     onClick={() => navigate(`/my-wishlists/${wishlist.wishlistId}/collaborate`)}
-                    className="flex items-center justify-center gap-2 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                    className="flex items-center justify-center gap-2 text-xs font-medium text-ink-soft hover:text-ink"
                   >
-                    👥 Manage collaborators
+                    <Users className="w-3.5 h-3.5" /> Manage collaborators
                   </button>
                 )}
               </div>
-
-              {/* Quick stats */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
-                {[
-                  { emoji: "📅", label: "Duration",  value: `${wishlist.totalDays} days` },
-                  { emoji: "👥", label: "Group type", value: wishlist.peopleType },
-                  { emoji: "❤️", label: "Saved by",  value: `${wishlist.totalGlobalSaveCount.toLocaleString()} travelers` },
-                ].map(stat => (
-                  <div key={stat.label} className="flex items-center gap-3">
-                    <span className="text-lg">{stat.emoji}</span>
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">{stat.label}</p>
-                      <p className="text-sm font-semibold text-gray-800">{stat.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-          </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* Mobile sticky CTA */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/70 backdrop-blur-xl border-t border-white/60 px-5 py-3 flex items-center gap-3">
+        <div className="shrink-0">
+          <p className="text-[10px] font-medium text-ink-muted uppercase">From</p>
+          <p className="font-display text-xl font-normal text-ink leading-none">{formatPrice(wishlist.basePricePerPerson)}</p>
+        </div>
+        <div className="flex-1">
+          {partner ? (
+            <PartnerBookingButton partner={partner} size="md" {...partnerCtx} />
+          ) : (
+            <Button fullWidth onClick={scrollToTrips}>
+              <UsersRound className="w-4 h-4" /> Find travel buddies
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -635,22 +524,23 @@ export default function WishlistDetailPage() {
 
 function WishlistDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Skeleton className="h-72 w-full rounded-none" />
-      <div className="max-w-7xl mx-auto px-5 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-          ))}
+    <div>
+      <div className="bg-cream-deep border-b border-line">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 py-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="lg:col-span-3 flex flex-col gap-4">
+            <Skeleton className="h-6 w-48 rounded-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-2/3" />
+          </div>
+          <Skeleton className="lg:col-span-2 aspect-4/3 rounded-2xl" />
         </div>
-        <div className="lg:col-span-1">
-          <Skeleton className="h-72 w-full rounded-3xl" />
+      </div>
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-3xl" />)}
         </div>
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
     </div>
   );
 }
-

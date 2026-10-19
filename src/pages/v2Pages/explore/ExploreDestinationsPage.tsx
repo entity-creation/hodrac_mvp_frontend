@@ -4,9 +4,8 @@ import { useFilterOptions, useSavedContent } from "../../../hooks/v2Hooks/useDat
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
 import { DestinationCardComponent } from "../../../components/v2Components/cards/Cards";
 import { DestinationFilterPanel } from "../../../components/v2Components/filters/FilterPanel";
-import { DestinationCardSkeleton, EmptyState, PageHeader, SortBar } from "../../../components/v2Components/ui";
+import { DestinationCardSkeleton, EmptyState, PageHeader, SortBar, Button, Chip } from "../../../components/v2Components/ui";
 import type { DestinationSummary, DestinationFilters, PagedResult } from "../../../types";
-import { motion } from "framer-motion";
 
 const DEFAULT_FILTERS: DestinationFilters = { sort: "popularity", page: 1, pageSize: 12 };
 
@@ -56,31 +55,20 @@ export default function ExploreDestinationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
+    <div className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
         <PageHeader
-          label="Explore Destinations"
-          title="Places travelers are adding to their wishlists"
-          subtitle="Discover structured destinations with real insights — hidden costs, crowd levels, ideal duration, and more."
+          label="Destinations"
+          title="Where could you go?"
+          subtitle="Honest guides to every place: what it really costs per day, how safe it is, hidden costs, and when to go."
         />
 
         {/* Quick-filter tag strip */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-8 md:flex-wrap md:justify-center md:overflow-visible">
           {QUICK_TAGS.map(tag => (
-            <motion.button
-              key={tag.key}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => toggleQuickTag(tag.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-medium transition-all ${
-                isQuickTagActive(tag.key)
-                  ? "border-gray-900 bg-gray-900 text-white"
-                  : "border-gray-200 text-gray-400 bg-white hover:border-gray-400"
-              }`}
-            >
+            <Chip key={tag.key} active={isQuickTagActive(tag.key)} onClick={() => toggleQuickTag(tag.key)}>
               <span>{tag.emoji}</span>
               <span>{tag.label}</span>
-            </motion.button>
+            </Chip>
           ))}
         </div>
 
@@ -104,7 +92,7 @@ export default function ExploreDestinationsPage() {
         </div>
 
         {result && (
-          <p className="text-sm text-gray-400 mb-6">
+          <p className="text-sm font-semibold text-ink-muted mb-6">
             {result.totalCount.toLocaleString()} destinations found
           </p>
         )}
@@ -120,9 +108,7 @@ export default function ExploreDestinationsPage() {
             title="No destinations found"
             subtitle="Try broadening your filters or exploring a different category."
             action={
-              <button onClick={() => setFilters(DEFAULT_FILTERS)} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full">
-                Clear filters
-              </button>
+<Button onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</Button>
             }
           />
         ) : (
@@ -141,24 +127,19 @@ export default function ExploreDestinationsPage() {
 
             {result.totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-12">
-                <button
-                  onClick={() => handlePage((filters.page ?? 1) - 1)}
-                  disabled={(filters.page ?? 1) <= 1}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >← Previous</button>
-                <span className="text-sm text-gray-500">
+                <Button variant="outline" size="sm" onClick={() => handlePage((filters.page ?? 1) - 1)} disabled={(filters.page ?? 1) <= 1}>
+                  ← Previous
+                </Button>
+                <span className="text-sm font-medium text-ink-soft">
                   Page {filters.page} of {result.totalPages}
                 </span>
-                <button
-                  onClick={() => handlePage((filters.page ?? 1) + 1)}
-                  disabled={(filters.page ?? 1) >= result.totalPages}
-                  className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-900 disabled:opacity-30 transition-all"
-                >Next →</button>
+                <Button variant="outline" size="sm" onClick={() => handlePage((filters.page ?? 1) + 1)} disabled={(filters.page ?? 1) >= result.totalPages}>
+                  Next →
+                </Button>
               </div>
             )}
           </>
         )}
-      </div>
     </div>
   );
 }

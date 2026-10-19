@@ -6,6 +6,10 @@ export interface UserDto {
   displayName: string;
   avatarUrl: string;
   hasCompletedOnboarding: boolean;
+  emailConfirmed: boolean;
+  notificationEmailOptIn: boolean;
+  // ISO 3166-1 alpha-2 home country; drives the display currency.
+  countryCode?: string | null;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -15,6 +19,42 @@ export interface AuthResponse {
   refreshToken: string;
   expiresIn: number;
   user: UserDto;
+}
+
+// ─── Currency ─────────────────────────────────────────────────────────────────
+
+// GET /api/currency/rates?base=USD — units of each currency per 1 `base`.
+export interface ExchangeRates {
+  base: string;
+  updatedAt: string;
+  rates: Record<string, number>;
+}
+
+// ─── Partners (paid placements) ───────────────────────────────────────────────
+
+// A travel business that has paid to sponsor or curate a wishlist or
+// destination. When present, the UI shows its branding and a Book button
+// that sends traffic to the partner.
+export interface Partner {
+  partnerId: string;
+  name: string;
+  logoUrl: string | null;
+  bookingUrl: string;
+  // Server-side click-logging redirect (GET /api/out/{linkId}); preferred
+  // over bookingUrl when present so clicks are counted reliably.
+  trackingUrl: string | null;
+  ctaLabel: string | null;
+  isSponsored: boolean;
+}
+
+export interface PartnerLeadPayload {
+  companyName: string;
+  contactName: string;
+  email: string;
+  website: string;
+  businessType: string;
+  interests: string[];
+  message: string;
 }
 
 // ─── Destinations ─────────────────────────────────────────────────────────────
@@ -29,6 +69,7 @@ export interface DestinationSummary {
   luxuryRating: number;
   tags: string[];
   categories: string[];
+  partner?: Partner | null;
 }
 
 export interface DestinationImage {
@@ -82,10 +123,13 @@ export interface WishlistCard {
   isFeatured: boolean;
   psychologicalVibeTags: string[];
   primaryPersonaTarget: string;
+  partner?: Partner | null;
 }
 
 export interface ItineraryItem {
   itemId: string;
+  // Position within the day; the itinerary edit routes use it.
+  orderIndex: number;
   title: string;
   description: string;
   timeOfDay: string;
@@ -105,6 +149,7 @@ export interface TransitRoute {
 }
 
 export interface ItineraryDay {
+  dayId: string;
   dayNumber: number;
   dayTitle: string;
   morningCity: string | null;
@@ -300,4 +345,187 @@ export interface WishlistFilters {
   sort?: string;
   page?: number;
   pageSize?: number;
+}
+
+// Shared types for the trip-posting feature. Mirrors backend/Dtos/TripPostDto.cs
+// and the Models — keep these in sync if the C# side changes shape.
+
+export type TripPostStatus = "Open" | "Closed" | "Cancelled";
+
+export type TripInterestStatus = "Requested" | "Approved" | "Declined" | "Withdrawn";
+
+export interface TripStop {
+  destinationId: string; // Guid
+  name: string;
+  imageUrl: string | null;
+}
+
+// Matches TripPostDto.FromEntity's flattened output — the frontend never
+// branches on whether the post was Destination-mode, Wishlist-mode, or
+// free-text; it just reads destinationLabel/stops/wishlistId.
+export interface TripPost {
+  id: string; // Guid
+  // Omitted by the public endpoint (GET /api/trips/public).
+  authorUserId?: string; // Guid
+  destinationLabel: string;
+  stops: TripStop[];
+  wishlistId: string | null;
+  startDate: string | null; // ISO date, e.g. "2027-06-01"
+  endDate: string | null;
+  isDateFlexible: boolean;
+  caption: string;
+  coverImageUrl: string | null;
+  maxGroupSize: number | null;
+  status: TripPostStatus;
+  createdAt: string; // ISO datetime
+  myInterestStatus?: TripInterestStatus | null;
+}
+
+export interface TripInterest {
+  id: string; // Guid
+  tripPostId: string;
+  requesterUserId: string;
+  requesterName: string; // hydrated for display; not on the raw entity
+  status: TripInterestStatus;
+  message: string | null;
+  requestedAt: string;
+  respondedAt: string | null;
+}
+
+export interface ThreadMessage {
+  id: string;
+  tripThreadId: string;
+  senderUserId: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface ThreadParticipant {
+  displayName: string | undefined;
+  userId: string;
+  joinedAt: string;
+}
+
+export type NotificationType =
+  | "InterestReceived"
+  | "InterestApproved"
+  | "InterestDeclined"
+  | "NewThreadMessage"
+  | "TripStartingSoon";
+
+export interface TripNotification {
+  id: string;
+  recipientUserId: string;
+  type: NotificationType;
+  tripPostId: string | null;
+  actorUserId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+// ── Search results (destination/wishlist picker in the composer) ──────────
+
+export interface DestinationSearchResult {
+  id: string;
+  name: string;
+  country: string | null;
+}
+
+export interface WishlistSearchResult {
+  id: string;
+  name: string;
+  stopNames: string[];
+}
+
+// ── Payloads the frontend sends ────────────────────────────────────────────
+
+export interface CreateTripPayload {
+  destinationId: string | null;
+  wishlistId: string | null;
+  freeTextDestination: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isDateFlexible: boolean;
+  caption: string;
+  maxGroupSize: number | null;
+}
+
+// PATCH /api/trips/{id} — every field optional; send only what changes.
+// `status` is numeric on the wire: see TRIP_STATUS_CODE.
+export interface UpdateTripPayload {
+  caption?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateFlexible?: boolean;
+  coverImageUrl?: string | null;
+  maxGroupSize?: number | null;
+  status?: TripPostStatus;
+}
+
+export const TRIP_STATUS_CODE: Record<TripPostStatus, number> = {
+  Open: 0,
+  Closed: 1,
+  Cancelled: 2,
+};
+
+export interface BrowseTripsFilters {
+  destination: string;
+  from: string;
+  to: string;
+  destinationId?: string;
+  wishlistId?: string;
+}
+
+// Row shapes for the "My Trips" page.
+export interface MyTripRequest {
+  interestId: string;
+  status: TripInterestStatus;
+  message: string | null;
+  requestedAt: string;
+  respondedAt: string | null;
+  trip: TripPost;
+}
+
+export interface MyTripPost {
+  trip: TripPost;
+  pendingInterestCount: number;
+  hasThread: boolean;
+}
+
+// ── API client contract ────────────────────────────────────────────────────
+// The host app implements this against its real HTTP client / SignalR
+// connection and passes it into these components as the `api` prop.
+
+export interface TripApiClient {
+  currentUserId: string;
+
+  searchDestinations(query: string): Promise<DestinationSearchResult[]>;
+  searchWishlists(query: string): Promise<WishlistSearchResult[]>;
+  createTrip: (payload: CreateTripPayload) => Promise<TripPost>;
+
+  browseTrips(filters: BrowseTripsFilters): Promise<TripPost[]>;
+  // Logged-out listing: no auth, paged, rate-limited (60/min per IP).
+  browsePublicTrips(filters: BrowseTripsFilters, page?: number, pageSize?: number): Promise<PagedResult<TripPost>>;
+  // Picks browse (signed in: includes my request status) or public (signed out).
+  findTrips(filters: BrowseTripsFilters, page?: number, pageSize?: number): Promise<PagedResult<TripPost>>;
+  updateTrip(tripId: string, changes: UpdateTripPayload): Promise<TripPost>;
+  getTrip: (tripId: string) => Promise<TripPost>;
+  requestToJoin(tripId: string): Promise<void>;
+  openThread(tripId: string): void;
+
+  // "My Trips" page
+  getMyRequests(): Promise<MyTripRequest[]>;
+  getMyPosts(): Promise<MyTripPost[]>;
+  getInterests(tripId: string): Promise<TripInterest[]>;
+  respondToInterest(tripId: string, interestId: string, approve: boolean): Promise<void>;
+  withdrawInterest(tripId: string, interestId: string): Promise<void>;
+
+  getThreadMessages(tripId: string): Promise<ThreadMessage[]>;
+  sendMessage(tripId: string, body: string): Promise<ThreadMessage>;
+  subscribeToThread?(tripId: string, onMessage: (message: ThreadMessage) => void): () => void;
+  subscribeToInterestUpdate?(onupdate: (args: TripInterest) => void): () => void
+  getNotifications(): Promise<TripNotification[]>;
+  getUnreadNotificationCount(): Promise<number>;
+  markNotificationRead(id: string): Promise<void>;
+  markAllNotificationsRead(): Promise<void>;
 }
