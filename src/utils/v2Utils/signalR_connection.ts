@@ -1,8 +1,9 @@
 // signalr/connection.ts
 import { HubConnectionBuilder, LogLevel, type HubConnection } from "@microsoft/signalr";
-import { tokenStore } from "../../dataStore/v2Api/client";
+import { API_BASE_URL, tokenStore } from "../../dataStore/v2Api/client";
 
-const BASE_URL = "https://localhost:7116";
+// Same backend as the REST client.
+const BASE_URL = API_BASE_URL;
 // One connection per hub path, shared by every hook that uses it.
 const hubConnections = new Map<string, Promise<HubConnection>>();
 

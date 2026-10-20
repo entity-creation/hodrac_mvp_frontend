@@ -26,7 +26,11 @@ import { withPreviewPartner, withPreviewPartnerList } from "../../utils/v2Utils/
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const BASE_URL = "https://localhost:7116";
+// Backend root. Set VITE_API_BASE_URL in .env (or .env.local to point a local
+// dev build at https://localhost:7116); defaults to production.
+export const API_BASE_URL: string =
+  import.meta.env.VITE_API_BASE_URL || "https://hodrac-mvp2-backend-2050972.onrender.com";
+const BASE_URL = API_BASE_URL;
 
 // ─── Token storage ────────────────────────────────────────────────────────────
 
