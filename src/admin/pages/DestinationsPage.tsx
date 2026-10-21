@@ -13,6 +13,7 @@ import {
 import { useAction, useDebounced, useQuery } from "../hooks";
 import { fmtDateTime, fmtNumber, fmtUsd } from "../format";
 import { FeatureForm } from "./FeaturedDestinationsPage";
+import { DestinationAudiencePanel } from "../insightsUi";
 
 // ─── Shared pickers (also used by WishlistsPage) ──────────────────────────────
 
@@ -338,9 +339,29 @@ function DestinationEditor({ id, lookups, onCreated, onChanged, onDeleted }: {
           onChanged={() => { detail.reload(); onChanged(); }}
         />
       )}
+      {detail.data && <AudienceSection destinationId={detail.data.destinationId} />}
       <DestinationForm initial={detail.data} lookups={lookups}
         onCreated={onCreated} onChanged={onChanged} onDeleted={onDeleted} />
     </>
+  );
+}
+
+// ─── Audience (who viewed it, last 90 days) ───────────────────────────────────
+
+function AudienceSection({ destinationId }: { destinationId: string }) {
+  // Loaded on demand: it's a separate (MongoDB-backed) query.
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-6 rounded-xl border border-line p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-ink">Audience</p>
+          <p className="text-xs text-ink-muted">Who viewed this destination recently. Totals only.</p>
+        </div>
+        <Btn size="sm" onClick={() => setOpen(o => !o)}>{open ? "Hide" : "Show audience"}</Btn>
+      </div>
+      {open && <div className="mt-4 border-t border-line pt-4"><DestinationAudiencePanel destinationId={destinationId} /></div>}
+    </div>
   );
 }
 

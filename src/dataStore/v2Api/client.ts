@@ -61,10 +61,14 @@ export const tokenStore = {
 // react to specific cases (409 conflicts, 404s, 429 rate limits).
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  // Parsed error body, for endpoints that return extra detail (e.g. a 409
+  // that includes the conflicting object).
+  body: unknown;
+  constructor(status: number, message: string, body?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -117,10 +121,12 @@ async function refreshAccessToken(): Promise<string | null> {
   return auth.accessToken;
 }
 
+// `onResponse` lets a caller read response headers (e.g. Location on a 202).
 async function request<T>(
   path: string,
   options: RequestInit = {},
-  retry = true
+  retry = true,
+  onResponse?: (res: Response) => void
 ): Promise<T> {
   const token = tokenStore.getAccess();
   const headers: Record<string, string> = {
@@ -142,7 +148,7 @@ async function request<T>(
       isRefreshing   = false;
       refreshQueue.forEach(cb => cb(newToken ?? ""));
       refreshQueue = [];
-      if (newToken) return request<T>(path, options, false);
+      if (newToken) return request<T>(path, options, false, onResponse);
       if (hadSession) {
         tokenStore.clear();
         unauthorizedHandlers.forEach(h => h(lastRefreshFailure));
@@ -150,7 +156,7 @@ async function request<T>(
     } else {
       return new Promise((resolve, reject) => {
         refreshQueue.push((newToken) => {
-          if (newToken) resolve(request<T>(path, options, false));
+          if (newToken) resolve(request<T>(path, options, false, onResponse));
           else reject(new Error("Unauthorized"));
         });
       });
@@ -160,13 +166,15 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, errorMessage(body, res.status));
+    throw new ApiError(res.status, errorMessage(body, res.status), body);
   }
 
-  // 204 No Content
-  if (res.status === 204) return undefined as T;
+  onResponse?.(res);
 
-  return res.json();
+  // 204 No Content, or any other empty body (e.g. 202 Accepted)
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 const get  = <T>(path: string)                => request<T>(path);
@@ -177,7 +185,17 @@ const patch = <T>(path: string, body: unknown) => request<T>(path, { method: "PA
 
 // Shared with the admin dashboard so its calls get the same auth, token
 // refresh and error handling.
-export const http = { get, post, put, patch, del };
+export const http = {
+  get, post, put, patch, del,
+  // POST that also returns the response's Location header.
+  postWithLocation: async <T>(path: string, body: unknown) => {
+    let location: string | null = null;
+    const data = await request<T>(path, { method: "POST", body: JSON.stringify(body) }, true, res => {
+      location = res.headers.get("Location");
+    });
+    return { data, location: location as string | null };
+  },
+};
 
 // Downloads an authenticated file (e.g. a CSV export) and saves it.
 export async function downloadFile(path: string, fallbackName: string): Promise<void> {
@@ -228,8 +246,15 @@ export const authApi = {
   updateMe: (displayName?: string, avatarUrl?: string) =>
     patch<UserDto>("/api/auth/me", { displayName, avatarUrl }),
 
-  completeOnboarding: () =>
-    patch<void>("/api/auth/me/onboarding", {}),
+  // Saves the quiz answers and marks onboarding complete. All fields are
+  // optional strings (OnboardingRequest).
+  completeOnboarding: (answers: {
+    whoTheyTravelWith?: string | null;
+    tripTypePreference?: string | null;
+    budgetProfile?: string | null;
+    primaryPriority?: string | null;
+  } = {}) =>
+    patch<void>("/api/auth/me/onboarding", answers),
 
   // Home country (ISO alpha-2), used to pick the display currency.
   updateCountry: (countryCode: string) =>

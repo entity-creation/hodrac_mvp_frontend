@@ -72,3 +72,21 @@ export function useAction() {
   return { run, busy };
 }
 
+
+// Like useQuery, but keeps the raw error (e.g. to tell a 503 apart) instead
+// of only a message.
+export function useRawErrorQuery<T>(fn: () => Promise<T>, deps: unknown[]) {
+  const q = useQuery(async () => {
+    try {
+      return { ok: true as const, data: await fn() };
+    } catch (e) {
+      return { ok: false as const, error: e as unknown };
+    }
+  }, deps);
+  return {
+    data: q.data?.ok ? q.data.data : null,
+    error: q.data && !q.data.ok ? q.data.error : q.error ? new Error(q.error) : null,
+    loading: q.loading,
+    reload: q.reload,
+  };
+}

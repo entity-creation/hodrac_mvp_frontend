@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
   type ReactNode,
 } from "react";
 import { useAuth } from "./useAuth";
@@ -44,6 +44,24 @@ function persist(data: PersonalizationData | null) {
 
 const PersonalizationContext = createContext<PersonalizationContextValue | null>(null);
 
+// The quiz can't be finished without its two single-choice answers; the
+// landing page's interest chips save interests only, which doesn't count.
+function isCompletedQuiz(p: PersonalizationData | null): p is PersonalizationData {
+  return !!p?.travelGroup && !!p?.budget;
+}
+
+// Quiz answers → OnboardingRequest. The backend takes one string per field,
+// so multi-choice questions send the first answer picked (all interests are
+// also sent as tags via the interaction event).
+function toOnboardingRequest(p: PersonalizationData) {
+  return {
+    whoTheyTravelWith: p.travelGroup || null,
+    tripTypePreference: p.interests[0] ?? null,
+    budgetProfile: p.budget || null,
+    primaryPriority: p.priorities[0] ?? null,
+  };
+}
+
 // App-wide "what kind of traveller are you" state. One quiz, available from
 // anywhere (nav "For You", landing hero), remembered across visits.
 export function PersonalizationProvider({ children }: { children: ReactNode }) {
@@ -51,13 +69,27 @@ export function PersonalizationProvider({ children }: { children: ReactNode }) {
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(load);
   const [quizOpen, setQuizOpen] = useState(false);
 
-  // First visit after sign-up: nudge the quiz once if we know nothing yet.
+  // Signed in but onboarding not recorded yet:
+  //  - took the quiz as a guest → send those answers now (once per user);
+  //  - otherwise nudge the quiz once.
+  const synced = useRef<string | null>(null);
   useEffect(() => {
-    if (isAuthenticated && user && !user.hasCompletedOnboarding && !personalization) {
+    if (!isAuthenticated || !user || user.hasCompletedOnboarding) return;
+
+    if (isCompletedQuiz(personalization)) {
+      if (synced.current === user.userId) return;
+      synced.current = user.userId;
+      authApi.completeOnboarding(toOnboardingRequest(personalization))
+        .then(() => updateUser({ hasCompletedOnboarding: true }))
+        .catch(() => { synced.current = null; });
+      return;
+    }
+
+    if (!personalization) {
       const timer = setTimeout(() => setQuizOpen(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user, personalization]);
+  }, [isAuthenticated, user, personalization, updateUser]);
 
   const update = useCallback((data: PersonalizationData | null) => {
     setPersonalization(data);
@@ -70,8 +102,12 @@ export function PersonalizationProvider({ children }: { children: ReactNode }) {
     // Feeds the backend's tag inference loop.
     eventsApi.track("onboarding_completed", user?.userId ?? "anonymous", data.interests, "quiz");
 
+    // Signed in: save the answers on the profile (also on retakes).
+    // Guests: saved locally and sent when they sign in (effect above).
     if (isAuthenticated) {
-      await authApi.completeOnboarding().catch(() => {});
+      // Mark as handled so the sign-in sync effect doesn't send it a second time.
+      if (user?.userId) synced.current = user.userId;
+      await authApi.completeOnboarding(toOnboardingRequest(data)).catch(() => {});
       updateUser({ hasCompletedOnboarding: true });
     }
   }, [update, user?.userId, isAuthenticated, updateUser]);

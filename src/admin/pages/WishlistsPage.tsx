@@ -14,6 +14,7 @@ import {
 import { useAction, useDebounced, useQuery, useToast } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber, fmtUsd, fromLocalInput, toLocalInput } from "../format";
 import { FieldError, SectionTitle, Thumb } from "./DestinationsPage";
+import { WishlistAudiencePanel } from "../insightsUi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ const TABS = [
   { id: "itinerary", label: "Itinerary" },
   { id: "featuring", label: "Featuring" },
   { id: "credits", label: "Creator credits" },
+  { id: "audience", label: "Audience" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -192,6 +194,7 @@ function WishlistEditor({ id, onChanged, onDeleted }: { id: string; onChanged: (
       {tab === "itinerary" && <ItineraryTab detail={d} onChanged={reload} />}
       {tab === "featuring" && <FeaturingTab key={`${d.wishlistId}-${d.featuredUntil ?? ""}`} detail={d} onChanged={reload} />}
       {tab === "credits" && <CreditsTab wishlistId={d.wishlistId} />}
+      {tab === "audience" && <WishlistAudiencePanel wishlistId={d.wishlistId} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import {
   LayoutDashboard, Users, Plane, Handshake, Inbox, Mail, MapPin, Tags, Globe,
-  Map, Star, Sparkles, BadgeCheck, ArrowLeft, ShieldAlert, type LucideIcon,
+  Map, Star, Sparkles, BadgeCheck, ArrowLeft, ShieldAlert, PieChart, type LucideIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAdminStatus, clearAdminCache, type AdminCheck } from "./useAdmin";
@@ -10,6 +10,7 @@ import { loginPath } from "../utils/v2Utils/authRedirect";
 import { FullPageSpinner } from "../components/v2Components/ui";
 import { ToastProvider } from "./ui";
 import OverviewPage from "./pages/OverviewPage";
+import InsightsPage from "./pages/InsightsPage";
 import UsersPage from "./pages/UsersPage";
 import NewsletterPage from "./pages/NewsletterPage";
 import TripsPage from "./pages/TripsPage";
@@ -35,7 +36,13 @@ interface AdminNavItem {
 }
 
 const ADMIN_SECTIONS: { group: string; items: AdminNavItem[] }[] = [
-  { group: "Overview", items: [{ to: "/admin", label: "Overview", icon: LayoutDashboard, end: true }] },
+  {
+    group: "Overview",
+    items: [
+      { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
+      { to: "/admin/insights", label: "Audience insights", icon: PieChart },
+    ],
+  },
   {
     group: "People",
     items: [
@@ -216,6 +223,7 @@ export default function AdminApp() {
     <Routes>
       <Route element={<AdminLayout />}>
         <Route index element={<OverviewPage />} />
+        <Route path="insights" element={<InsightsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="newsletter" element={<NewsletterPage />} />
         <Route path="trips" element={<TripsPage />} />

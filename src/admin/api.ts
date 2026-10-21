@@ -1,4 +1,4 @@
-import { http, downloadFile } from "../dataStore/v2Api/client";
+import { http, downloadFile, isApiError } from "../dataStore/v2Api/client";
 
 // ─── Admin API ────────────────────────────────────────────────────────────────
 // Every route requires an admin login. Times are UTC ISO strings.
@@ -616,6 +616,129 @@ export interface AdminPartnerLead {
   updatedAt: string | null;
 }
 
+// ─── Audience insights (/api/admin/insights) ──────────────────────────────────
+// Totals only: groups smaller than minBucketSize (3) are merged into "other".
+// 503 when the insights store (MongoDB) is unreachable.
+
+// Sorted by count desc; "other" (if any) last; "unknown"/"Unknown" = not answered.
+export interface InsightBucket { key: string; count: number }
+
+// interactions = weighted (save 2, view 1); users = profiles with the tag.
+// A final "other" entry sums small tags (its users can double-count).
+export interface InsightTag { tag: string; interactions: number; users: number }
+
+export interface InsightVectors {
+  adventureSeeker: number;
+  socialButterfly: number;
+  plannerVsSpontaneous: number;
+  culturalImmersionIndex: number;
+  teenValidationPriority: number;
+  opennessToExperience: number;
+  conscientiousness: number;
+  extraversion: number;
+}
+
+export interface InsightAudience {
+  profileCount: number;
+  onboardedCount: number;
+  // Raw answer text (merged case-insensitively).
+  whoTheyTravelWith: InsightBucket[];
+  tripTypePreference: InsightBucket[];
+  budgetProfile: InsightBucket[];
+  primaryPriority: InsightBucket[];
+  primaryTravelerType: InsightBucket[];
+  incomeBracket: InsightBucket[];
+  topTags: InsightTag[];
+  // 0–100 each; null when fewer than 3 profiles.
+  averageVectors: InsightVectors | null;
+}
+
+export interface InsightsAudienceResponse {
+  generatedAt: string;
+  minBucketSize: number;
+  audience: InsightAudience;
+}
+
+export interface WishlistAudienceResponse {
+  wishlistId: string;
+  wishlistName: string;
+  totalGlobalSaveCount: number;
+  saverCount: number;
+  minBucketSize: number;
+  // Normalised keys; null until the wishlist has been saved or a rebuild ran.
+  segmentCounters: {
+    lastComputedAt: string;
+    travelerTypes: InsightBucket[];
+    budgetTiers: InsightBucket[];
+    primaryPriorities: InsightBucket[];
+    personaClusters: InsightBucket[];
+  } | null;
+  savers: InsightAudience;
+}
+
+export interface DestinationAudienceResponse {
+  destinationId: string;
+  destinationName: string;
+  windowDays: number;
+  clickCount: number;
+  uniqueUsers: number;
+  minBucketSize: number;
+  clickers: InsightAudience;
+}
+
+// income is only accepted by the tags endpoint.
+export type SegmentType = "travelerType" | "budget" | "priority" | "prototype" | "income";
+
+export interface SegmentWishlistsResponse {
+  segmentType: SegmentType;
+  segment: string;
+  segmentKey: string; // how `segment` was interpreted
+  minBucketSize: number;
+  // Ordered by segmentSaveCount desc (rank = position).
+  items: { wishlistId: string; wishlistName: string; segmentSaveCount: number; totalGlobalSaveCount: number }[];
+  // Saves from wishlists with < 3 saves in the group (left out of items).
+  suppressedSaveCount: number;
+}
+
+export interface SegmentTagsResponse {
+  segmentType: SegmentType | null;
+  segment: string | null;
+  profileCount: number;
+  minBucketSize: number;
+  tags: InsightTag[];
+}
+
+export const PROTOTYPES = [
+  "Adventurer", "Culture Seeker", "Social Explorer", "Foodie", "Relaxer",
+  "Planner", "Family Traveller", "Luxury Traveller", "Budget Explorer", "Unknown",
+] as const;
+export const INCOME_BRACKETS = ["lower", "middle", "upper_middle", "high", "unknown"] as const;
+
+export type RebuildStatus = "running" | "completed" | "failed" | "cancelled";
+export type RebuildPhase = "starting" | "ensure_profiles" | "profiles" | "wishlist_popularity" | "done";
+
+// Held in memory on the server: after a restart the old jobId returns 404.
+export interface RebuildJob {
+  jobId: string;
+  status: RebuildStatus;
+  phase: RebuildPhase;
+  startedAt: string;
+  finishedAt: string | null;
+  requestedBy: string | null;
+  profilesCreated: number;
+  profilesTotal: number;
+  profilesProcessed: number;
+  profilesUpdated: number;
+  profilesFailed: number;
+  eventsScanned: number;
+  savesScanned: number;
+  wishlistsTotal: number;
+  wishlistsProcessed: number;
+  wishlistsFailed: number;
+  staleWishlistDocsDeleted: number;
+  error: string | null;
+}
+
 // ─── Endpoints ────────────────────────────────────────────────────────────────
 
 type Paging = { page?: number; pageSize?: number };
@@ -790,6 +913,37 @@ export const adminApi = {
     remove: (linkId: string) => http.del<void>(`${A}/partner-links/${linkId}`),
     stats: (linkId: string, range: { from?: string; to?: string } = {}) =>
       http.get<ClickStats>(`${A}/partner-links/${linkId}/stats${qs(range)}`),
+  },
+
+  insights: {
+    audience: () => http.get<InsightsAudienceResponse>(`${A}/insights/audience`),
+    wishlistAudience: (id: string) => http.get<WishlistAudienceResponse>(`${A}/insights/wishlists/${id}/audience`),
+    destinationAudience: (id: string) => http.get<DestinationAudienceResponse>(`${A}/insights/destinations/${id}/audience`),
+    // 400 if segmentType is invalid (income isn't allowed here) or segment is missing.
+    segmentWishlists: (segmentType: Exclude<SegmentType, "income">, segment: string, limit = 20) =>
+      http.get<SegmentWishlistsResponse>(`${A}/insights/wishlists${qs({ segmentType, segment, limit })}`),
+    // Omit both for overall top tags.
+    tags: (segment?: { segmentType: SegmentType; segment: string }, limit = 20) =>
+      http.get<SegmentTagsResponse>(`${A}/insights/tags${qs({ ...segment, limit })}`),
+    // Starts a background rebuild. If one is already running (409), returns
+    // that job instead. The job id comes from the body when present, else
+    // from the Location header (needs CORS Access-Control-Expose-Headers).
+    rebuild: async (): Promise<{ job: RebuildJob | null; jobId: string | null; alreadyRunning: boolean }> => {
+      try {
+        const { data, location } = await http.postWithLocation<RebuildJob | { jobId?: string } | undefined>(`${A}/insights/rebuild`, {});
+        const jobId = (data && "jobId" in data && data.jobId) || location?.split("/").filter(Boolean).pop() || null;
+        const job = data && "status" in data ? (data as RebuildJob) : null;
+        return { job, jobId, alreadyRunning: false };
+      } catch (e) {
+        if (isApiError(e, 409)) {
+          const job = (e.body as { job?: RebuildJob } | undefined)?.job ?? null;
+          return { job, jobId: job?.jobId ?? null, alreadyRunning: true };
+        }
+        throw e;
+      }
+    },
+    // 404 for an unknown job (e.g. after a server restart).
+    rebuildStatus: (jobId: string) => http.get<RebuildJob>(`${A}/insights/rebuild/${encodeURIComponent(jobId)}`),
   },
 
   partnerLeads: {
