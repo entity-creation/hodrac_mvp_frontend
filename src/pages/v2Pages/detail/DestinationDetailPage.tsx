@@ -248,7 +248,7 @@ export default function DestinationDetailPage() {
 
           {/* Wishlists featuring this destination */}
           <div>
-            <SectionTitle>Ready-made trips that go here</SectionTitle>
+            <SectionTitle>Ready-made wishlists that go here</SectionTitle>
             {relatedLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {Array.from({ length: 2 }).map((_, i) => <WishlistCardSkeleton key={i} />)}

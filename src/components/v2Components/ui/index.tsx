@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Heart, X, ArrowRight, Loader2 } from "lucide-react";
 
@@ -305,7 +306,10 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  return (
+  // Rendered into <body>: an ancestor with a backdrop-filter or transform
+  // (e.g. the frosted navbar, hover-lifted cards) would otherwise become the
+  // containing block for `fixed` and squash/clip the dialog.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -336,7 +340,8 @@ export function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 
