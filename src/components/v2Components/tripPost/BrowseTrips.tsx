@@ -5,7 +5,7 @@ import { Search, X, PlusCircle, MapPin, Map } from "lucide-react";
 import TripFeedCard, { TripCardSkeleton } from "./TripFeedCard";
 import TripPlaceSearch, { type PlaceSelection } from "./TripPlaceSearch";
 import type { BrowseTripsFilters, TripApiClient, TripPost } from "../../../types";
-import { useTripInterestHub, useTripPostCreatedHub, type TripInterestUpdate } from "../../../hooks/v2Hooks/useSignalR";
+import { useTripInterestHub, useTripPostCreatedHub, useTripPostLifecycleHub, type TripInterestUpdate } from "../../../hooks/v2Hooks/useSignalR";
 import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
 import { Button, EmptyState, PageHeader } from "../ui";
 import { createTripForPlacePath } from "../../../utils/v2Utils/routes";
@@ -112,6 +112,18 @@ export default function BrowseTrips({ api }: BrowseTripsProps) {
   }, [queryKey]);
 
   useTripPostCreatedHub({ onUpdate: handlePostUpdate });
+
+  // Hidden/removed trips vanish; closed or cancelled ones leave the open list.
+  const handleTripRemoved = useCallback((tripId: string) => {
+    setTrips((prev) => prev.filter((t) => t.id !== tripId));
+  }, []);
+  const handleTripStatus = useCallback((tripId: string, status: unknown) => {
+    setTrips((prev) => {
+      const next = prev.map((t) => (t.id === tripId ? normalizeTrip({ ...t, status: status as TripPost["status"] }) : t));
+      return next.filter((t) => t.id !== tripId || t.status === "Open");
+    });
+  }, []);
+  useTripPostLifecycleHub({ onRemoved: handleTripRemoved, onStatusChanged: handleTripStatus });
 
   // Reload whenever the URL filters change.
   useEffect(() => {

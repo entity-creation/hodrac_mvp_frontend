@@ -1,14 +1,18 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "../hooks/v2Hooks/useAuth";
 import { PersonalizationProvider } from "../hooks/v2Hooks/usePersonalization";
 import { CurrencyProvider } from "../hooks/v2Hooks/useCurrency";
 import "../App.css";
 
+// Admin dashboard: its own bundle, only downloaded when someone opens /admin.
+const AdminApp = lazy(() => import("../admin/AdminApp"));
+
 // Layout
 import AppNavBar from "../components/v2Components/layout/AppNavBar";
 import Footer from "../components/v2Components/pages/landingPage2/Footer";
 import RequireAuth from "../components/v2Components/auth/RequireAuth";
-import { ButtonLink } from "../components/v2Components/ui";
+import { ButtonLink, FullPageSpinner } from "../components/v2Components/ui";
 
 // Landing
 import LandingPage from "../pages/v2Pages/landingPage/LandingPage";
@@ -86,6 +90,18 @@ export default function App() {
       <CurrencyProvider>
       <PersonalizationProvider>
         <Routes>
+          {/* Admin has its own layout (no site navbar/footer) */}
+          <Route element={<RequireAuth />}>
+            <Route
+              path="/admin/*"
+              element={
+                <Suspense fallback={<FullPageSpinner />}>
+                  <AdminApp />
+                </Suspense>
+              }
+            />
+          </Route>
+
           <Route element={<AppLayout />}>
             <Route path="/" element={<LandingPage />} />
 

@@ -38,7 +38,11 @@ export default function TripThreadChat({
     setMessages((prev) => appendUnique(prev, incoming));
   }, []);
 
-  useTripThreadHub(tripId, handleIncoming);
+  const handleDeleted = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  }, []);
+
+  useTripThreadHub(tripId, handleIncoming, handleDeleted);
 
   useEffect(() => {
     let cancelled = false;

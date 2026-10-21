@@ -447,7 +447,17 @@ function MyPostCard({
             </p>
           </div>
 
-          <TripStatusBadge status={status} />
+          <div className="flex flex-wrap gap-2">
+            <TripStatusBadge status={status} />
+            {(post.isHidden || post.trip.isHidden) && (
+              <span
+                className="inline-flex w-fit shrink-0 items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
+                title="A moderator has hidden this trip. Only you can see it."
+              >
+                Hidden by moderators
+              </span>
+            )}
+          </div>
 
           {post.pendingInterestCount > 0 && status === "Open" && (
             <div className="rounded-full bg-cream-deep px-3 py-1.5 text-xs font-medium text-ink">

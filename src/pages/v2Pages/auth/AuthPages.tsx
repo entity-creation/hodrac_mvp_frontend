@@ -12,7 +12,13 @@ import { rawQueryParam } from "../../../utils/v2Utils/queryParams";
 const LOGIN_NOTICES: Record<string, string> = {
   "password-changed": "Your password was changed and you've been signed out everywhere. Sign in with your new password.",
   "password-reset": "Your password has been reset. Sign in with your new password.",
+  locked: "Your account has been locked and you've been signed out. Contact support if you think this is a mistake.",
 };
+
+// Login is refused with 403 { error: "Account locked." } after 5 wrong
+// passwords (15 minutes) or when an admin has locked the account.
+const LOCKED_MESSAGE =
+  "This account is temporarily locked. If you entered the wrong password several times, wait 15 minutes and try again. Otherwise, contact support.";
 
 // Where to send the user after a successful login/register.
 function useRedirectTarget() {
@@ -147,8 +153,8 @@ export function LoginPage() {
     try {
       await login(email, password);
       navigate(target, { replace: true });
-    } catch (e: any) {
-      setError(e.message ?? "Invalid email or password.");
+    } catch (e) {
+      setError(friendlyError(e, { 403: LOCKED_MESSAGE }, "Invalid email or password."));
     } finally {
       setLoading(false);
     }

@@ -149,11 +149,17 @@ export function DestinationCardComponent({ destination, saved, onToggleSave, ind
         <div className="absolute top-3 right-3">
           <SaveButton saved={saved} onToggle={onToggleSave} size="sm" />
         </div>
-        {destination.partner && (
+        {destination.partner ? (
           <div className="absolute top-3 left-3">
             <SponsoredTag partner={destination.partner} />
           </div>
-        )}
+        ) : destination.isFeatured ? (
+          <div className="absolute top-3 left-3">
+            <span className="text-[10px] font-medium uppercase tracking-[0.15em] bg-white/70 backdrop-blur-md text-ink rounded-full px-2.5 py-1">
+              Featured
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="p-5 flex flex-col flex-1">

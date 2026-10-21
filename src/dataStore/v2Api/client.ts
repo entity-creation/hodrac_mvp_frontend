@@ -85,9 +85,13 @@ let refreshQueue: Array<(token: string) => void> = [];
 
 // Notified when a signed-in session can't be refreshed (refresh token
 // expired or revoked). AuthProvider uses this to sign out and redirect.
-const unauthorizedHandlers = new Set<() => void>();
+// "locked": the refresh was refused with 403 (account locked by an admin).
+export type SignOutReason = "expired" | "locked";
 
-export function onUnauthorized(handler: () => void): () => void {
+const unauthorizedHandlers = new Set<(reason: SignOutReason) => void>();
+let lastRefreshFailure: SignOutReason = "expired";
+
+export function onUnauthorized(handler: (reason: SignOutReason) => void): () => void {
   unauthorizedHandlers.add(handler);
   return () => unauthorizedHandlers.delete(handler);
 }
@@ -103,7 +107,11 @@ async function refreshAccessToken(): Promise<string | null> {
     body:    JSON.stringify({ userId, refreshToken }),
   });
 
-  if (!res.ok) { tokenStore.clear(); return null; }
+  if (!res.ok) {
+    lastRefreshFailure = res.status === 403 ? "locked" : "expired";
+    tokenStore.clear();
+    return null;
+  }
   const auth: AuthResponse = await res.json();
   tokenStore.set(auth);
   return auth.accessToken;
@@ -137,7 +145,7 @@ async function request<T>(
       if (newToken) return request<T>(path, options, false);
       if (hadSession) {
         tokenStore.clear();
-        unauthorizedHandlers.forEach(h => h());
+        unauthorizedHandlers.forEach(h => h(lastRefreshFailure));
       }
     } else {
       return new Promise((resolve, reject) => {
@@ -167,6 +175,39 @@ const put  = <T>(path: string, body: unknown) => request<T>(path, { method: "PUT
 const del  = <T>(path: string)               => request<T>(path, { method: "DELETE" });
 const patch = <T>(path: string, body: unknown) => request<T>(path, { method: "PATCH", body: JSON.stringify(body) });
 
+// Shared with the admin dashboard so its calls get the same auth, token
+// refresh and error handling.
+export const http = { get, post, put, patch, del };
+
+// Downloads an authenticated file (e.g. a CSV export) and saves it.
+export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  const fetchWith = (token: string | null) =>
+    fetch(`${BASE_URL}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+
+  let res = await fetchWith(tokenStore.getAccess());
+  if (res.status === 401) {
+    const fresh = await refreshAccessToken().catch(() => null);
+    if (fresh) res = await fetchWith(fresh);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, errorMessage(body, res.status));
+  }
+
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  const name = match ? decodeURIComponent(match[1]) : fallbackName;
+
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -194,8 +235,9 @@ export const authApi = {
   updateCountry: (countryCode: string) =>
     patch<UserDto | void>("/api/auth/me", { countryCode }),
 
+  // Body is NotificationPreferencesRequest { emailOptIn }.
   updateNotificationPreferences: (notificationEmailOptIn: boolean) =>
-    patch<UserDto | void>("/api/auth/me/notification-preferences", { notificationEmailOptIn }),
+    patch<UserDto | void>("/api/auth/me/notification-preferences", { emailOptIn: notificationEmailOptIn }),
 
   // Changing or resetting the password ends every session on the server.
   changePassword: (currentPassword: string, newPassword: string) =>
@@ -376,6 +418,11 @@ export const destinationsApi = {
 
   byId: (id: string) =>
     get<DestinationDetail>(`/api/destinations/${id}`).then(withPreviewPartner),
+
+  // Currently featured destinations, in admin order (public, 1–50).
+  featured: (limit = 12) =>
+    get<DestinationSummary[]>(`/api/destinations/featured?limit=${Math.min(50, Math.max(1, limit))}`)
+      .then(withPreviewPartnerList),
 
   byCountry: (countryId: string, params: DestinationFilters = {}) =>
     get<PagedResult<DestinationSummary>>(`/api/explore/destinations/by-country/${countryId}${buildQuery(params as Record<string, unknown>)}`),

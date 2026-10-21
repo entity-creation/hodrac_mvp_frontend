@@ -45,12 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
-  useEffect(() => onUnauthorized(() => {
+  useEffect(() => onUnauthorized((reason) => {
     const wasSignedIn = !!userRef.current;
     stopHubConnections();
     setUser(null);
     if (wasSignedIn && !window.location.pathname.startsWith("/auth/")) {
-      navigate(loginPath(currentPath()), { replace: true });
+      const path = loginPath(currentPath());
+      navigate(reason === "locked" ? `${path}${path.includes("?") ? "&" : "?"}reason=locked` : path, { replace: true });
     }
   }), [navigate]);
 

@@ -178,6 +178,7 @@ export default function DestinationDetailPage() {
             <h1 className="text-5xl md:text-7xl font-light text-ink leading-[0.98] mb-4">{dest.destinationName}</h1>
             <div className="flex flex-wrap items-center gap-2">
               {partner && <PartnerBadge partner={partner} />}
+              {dest.isFeatured && <Badge tone="neutral">Featured</Badge>}
               {safety.label && (
                 <span className="text-xs font-medium px-3 py-1 rounded-full border border-line text-white" style={{ backgroundColor: safety.color }}>
                   {safety.label}

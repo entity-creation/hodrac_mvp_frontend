@@ -21,19 +21,29 @@ export default function DestinationsSection() {
   const [destinations, setDestinations] = useState<DestinationSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Admin-featured destinations lead (in their curated order); popular ones
+  // fill the remaining tiles.
   useEffect(() => {
-    destinationsApi.list({ sort: "popularity", pageSize: 5, page: 1 })
-      .then(r => setDestinations(r.items))
-      .catch(() => setDestinations([]))
+    const TILES = 5;
+    Promise.all([
+      destinationsApi.featured(TILES).catch(() => [] as DestinationSummary[]),
+      destinationsApi.list({ sort: "popularity", pageSize: TILES, page: 1 }).then(r => r.items).catch(() => [] as DestinationSummary[]),
+    ])
+      .then(([featured, popular]) => {
+        const seen = new Set(featured.map(d => d.destinationId));
+        setDestinations([...featured, ...popular.filter(d => !seen.has(d.destinationId))].slice(0, TILES));
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  const anyFeatured = destinations.some(d => d.isFeatured);
 
   if (!loading && destinations.length === 0) return null;
 
   return (
     <Section
       id="popular"
-      eyebrow="Popular right now"
+      eyebrow={anyFeatured ? "Featured & popular" : "Popular right now"}
       title="The destinations everyone is talking about"
       subtitle="Each comes with an honest guide (daily costs, safety, insider tips) and the trips that go there."
       action={{ label: "All destinations", to: ROUTES.PUBLIC.EXPLOREDESTINATION }}
@@ -113,7 +123,7 @@ function PopularTile({
       {/* Rank + save */}
       <div className="absolute top-4 inset-x-4 flex items-start justify-between pointer-events-none">
         <span className="glass rounded-full px-3 py-1 text-xs text-ink pointer-events-auto">
-          No. {rank}
+          {d.isFeatured ? "Featured" : `No. ${rank}`}
         </span>
         <div className="flex flex-col items-end gap-2 pointer-events-auto">
           <SaveButton saved={saved} onToggle={onToggleSave} size="sm" />

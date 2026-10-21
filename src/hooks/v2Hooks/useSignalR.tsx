@@ -211,9 +211,21 @@ export type ThreadMessageReceived = {
 
 // Live messages for one trip thread. The sender also receives the event,
 // so consumers should de-dupe on message.id.
+// Reads an id from a hub payload sent either as a bare id or as an object.
+function payloadId(payload: unknown, key: string): string | undefined {
+  if (typeof payload === "string") return payload;
+  if (payload && typeof payload === "object") {
+    const v = (payload as Record<string, unknown>)[key] ?? (payload as Record<string, unknown>).id;
+    return typeof v === "string" ? v : undefined;
+  }
+  return undefined;
+}
+
 export function useTripThreadHub(
   tripId: string,
-  onMessage: (message: ThreadMessage) => void
+  onMessage: (message: ThreadMessage) => void,
+  // A moderator removed a message (ThreadMessageDeleted).
+  onMessageDeleted?: (messageId: string) => void
 ) {
   useEffect(() => {
     if (!tripId) return;
@@ -226,12 +238,21 @@ export function useTripThreadHub(
       onMessage(payload.message);
     };
 
+    const messageDeletedHandler = (payload: unknown) => {
+      const forTrip = payloadId(payload, "tripId");
+      // Bare-id payloads carry no trip, so accept them; otherwise match the trip.
+      if (typeof payload === "object" && forTrip && forTrip !== tripId) return;
+      const messageId = typeof payload === "string" ? payload : payloadId(payload, "messageId");
+      if (messageId) onMessageDeleted?.(messageId);
+    };
+
     getHubConnection("tripThreadHub")
       .then((hub) => {
         if (!active) return;
 
         connection = hub;
         connection.on("ThreadMessageReceived", messageReceivedHandler);
+        connection.on("ThreadMessageDeleted", messageDeletedHandler);
       })
       .catch((error) => {
         console.error("Failed to connect to trip thread hub", error);
@@ -242,9 +263,52 @@ export function useTripThreadHub(
 
       if (connection) {
         connection.off("ThreadMessageReceived", messageReceivedHandler);
+        connection.off("ThreadMessageDeleted", messageDeletedHandler);
       }
     };
-  }, [tripId, onMessage]);
+  }, [tripId, onMessage, onMessageDeleted]);
+}
+
+// Trip posts changing under the viewer: removed/hidden (TripPostRemoved) or a
+// new status (TripPostStatusChanged, status may be a name or a number).
+export function useTripPostLifecycleHub({
+  onRemoved,
+  onStatusChanged,
+}: {
+  onRemoved?: (tripId: string) => void;
+  onStatusChanged?: (tripId: string, status: unknown) => void;
+}) {
+  useEffect(() => {
+    let active = true;
+    let connection: HubConnection | null = null;
+
+    const removedHandler = (payload: unknown) => {
+      const id = payloadId(payload, "tripId");
+      if (id) onRemoved?.(id);
+    };
+    const statusHandler = (payload: unknown, maybeStatus?: unknown) => {
+      const id = payloadId(payload, "tripId");
+      const status = maybeStatus ?? (payload && typeof payload === "object" ? (payload as Record<string, unknown>).status : undefined);
+      if (id) onStatusChanged?.(id, status);
+    };
+
+    getHubConnection("tripPostHub")
+      .then((hub) => {
+        if (!active) return;
+        connection = hub;
+        connection.on("TripPostRemoved", removedHandler);
+        connection.on("TripPostStatusChanged", statusHandler);
+      })
+      .catch((error) => console.error("Failed to connect to trip hub", error));
+
+    return () => {
+      active = false;
+      if (connection) {
+        connection.off("TripPostRemoved", removedHandler);
+        connection.off("TripPostStatusChanged", statusHandler);
+      }
+    };
+  }, [onRemoved, onStatusChanged]);
 }
 
 // Live notifications for the signed-in user. The server targets the user

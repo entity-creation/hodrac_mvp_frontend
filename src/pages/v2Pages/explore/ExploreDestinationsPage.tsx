@@ -64,6 +64,10 @@ export default function ExploreDestinationsPage() {
 
         {/* Quick-filter tag strip */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-8 md:flex-wrap md:justify-center md:overflow-visible">
+          <Chip active={!!filters.featured} onClick={() => setFilters(f => ({ ...f, featured: f.featured ? undefined : true, page: 1 }))}>
+            <span>★</span>
+            <span>Featured</span>
+          </Chip>
           {QUICK_TAGS.map(tag => (
             <Chip key={tag.key} active={isQuickTagActive(tag.key)} onClick={() => toggleQuickTag(tag.key)}>
               <span>{tag.emoji}</span>

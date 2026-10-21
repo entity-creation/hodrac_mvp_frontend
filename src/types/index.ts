@@ -70,6 +70,8 @@ export interface DestinationSummary {
   tags: string[];
   categories: string[];
   partner?: Partner | null;
+  // Curated by admins; shows a "Featured" badge.
+  isFeatured?: boolean;
 }
 
 export interface DestinationImage {
@@ -319,6 +321,8 @@ export interface NewsLetterEmail {
 // ─── Explore filters (query params) ──────────────────────────────────────────
 
 export interface DestinationFilters {
+  // Only admin-featured destinations (combines with the other filters).
+  featured?: boolean;
   tags?: string;
   categories?: string;
   countryId?: string;
@@ -367,6 +371,7 @@ export interface TripPost {
   id: string; // Guid
   // Omitted by the public endpoint (GET /api/trips/public).
   authorUserId?: string; // Guid
+  isHidden?: boolean;
   destinationLabel: string;
   stops: TripStop[];
   wishlistId: string | null;
@@ -488,6 +493,8 @@ export interface MyTripRequest {
 
 export interface MyTripPost {
   trip: TripPost;
+  // Hidden by a moderator: invisible to everyone except the author.
+  isHidden?: boolean;
   pendingInterestCount: number;
   hasThread: boolean;
 }
