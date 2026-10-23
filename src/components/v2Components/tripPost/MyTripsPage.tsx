@@ -10,6 +10,8 @@ import type {
   TripPost,
   TripPostStatus,
 } from "../../../types";
+import { tripCapacity } from "../../../utils/v2Utils/trips";
+import ShareButton from "../share/ShareButton";
 
 interface MyTripsPageProps {
   api: TripApiClient;
@@ -179,6 +181,7 @@ function MyRequestsTab({ api }: { api: TripApiClient }) {
 
               <p className="mt-1 text-sm text-ink-soft">
                 {formatDateRange(r.trip)}
+                {tripCapacity(r.trip).label && <span className="text-ink-muted"> · {tripCapacity(r.trip).label}</span>}
               </p>
             </div>
 
@@ -444,6 +447,7 @@ function MyPostCard({
 
             <p className="mt-1 text-sm text-ink-soft">
               {formatDateRange(post.trip)}
+              {tripCapacity(post.trip).label && <span className="text-ink-muted"> · {tripCapacity(post.trip).label}</span>}
             </p>
           </div>
 
@@ -505,6 +509,9 @@ function MyPostCard({
         {/* Manage */}
         {status !== "Cancelled" && (
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+            {!(post.isHidden || post.trip.isHidden) && (
+              <ShareButton type="trip" id={post.trip.id} variant="button" label="Share" className="px-4! py-2!" />
+            )}
             <button
               type="button"
               onClick={() => setEditing(true)}

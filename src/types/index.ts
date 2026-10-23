@@ -30,6 +30,27 @@ export interface ExchangeRates {
   rates: Record<string, number>;
 }
 
+// ─── Sharing ──────────────────────────────────────────────────────────────────
+
+export type ShareType = "destination" | "wishlist" | "trip" | "shared-wishlist";
+
+// GET /api/share/{type}/{id}. Share `previewUrl` (an API page that renders
+// link-preview cards and forwards people to `url`, the frontend page).
+export interface ShareInfo {
+  url: string;
+  previewUrl: string;
+  title: string;
+  text: string;
+  imageUrl: string | null;
+}
+
+// POST /api/user-wishlists/{id}/share (idempotent: same link each call).
+export interface WishlistShareLink {
+  shareToken: string;
+  shareUrl: string;
+  sharedAt: string;
+}
+
 // ─── Partners (paid placements) ───────────────────────────────────────────────
 
 // A travel business that has paid to sponsor or curate a wishlist or
@@ -190,6 +211,10 @@ export interface WishlistDetail extends WishlistCard {
   isCollaborator: boolean;
   userRole: string; // "Owner" | "Editor" | "Viewer" | "None"
   creatorAttributions: WishlistCreatorAttributionDto[];
+  // Owner-only: present when the owner has turned on link sharing.
+  shareToken?: string | null;
+  shareUrl?: string | null;
+  sharedAt?: string | null;
     /**
    * PostgreSQL xmin concurrency token. Pass this back in the PUT body
    * as `xmin` to enable optimistic concurrency — the server returns 409
@@ -372,6 +397,10 @@ export interface TripPost {
   // Omitted by the public endpoint (GET /api/trips/public).
   authorUserId?: string; // Guid
   isHidden?: boolean;
+  // Head-counts — only on logged-in responses (never on /api/trips/public…).
+  approvedCount?: number; // approved members, not counting the author
+  goingCount?: number; // approvedCount + 1 (the author)
+  spotsLeft?: number | null; // maxGroupSize − goingCount (≥ 0); null = no size limit
   destinationLabel: string;
   stops: TripStop[];
   wishlistId: string | null;
@@ -517,6 +546,7 @@ export interface TripApiClient {
   findTrips(filters: BrowseTripsFilters, page?: number, pageSize?: number): Promise<PagedResult<TripPost>>;
   updateTrip(tripId: string, changes: UpdateTripPayload): Promise<TripPost>;
   getTrip: (tripId: string) => Promise<TripPost>;
+  getPublicTrip(tripId: string): Promise<TripPost>;
   requestToJoin(tripId: string): Promise<void>;
   openThread(tripId: string): void;
 

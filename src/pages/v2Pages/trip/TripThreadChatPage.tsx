@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import TripThreadChat from "../../../components/v2Components/tripPost/TripThreadChat";
 import { tripClient } from "../../../dataStore/v2Api/client";
 import type { TripPost } from "../../../types";
+import { tripCapacity } from "../../../utils/v2Utils/trips";
+import ShareButton from "../../../components/v2Components/share/ShareButton";
 
 
 
@@ -121,14 +123,17 @@ export default function TripThreadChatPage() {
   return (
     <div className="min-h-screen bg-cream">
       <main className="max-w-5xl mx-auto px-5 md:px-8 pb-20 pt-8">
-        {/* Back */}
-        <button
-          onClick={handleBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink transition mb-8"
-        >
-          <ArrowLeft size={16} />
-          Back to trips
-        </button>
+        {/* Back + share */}
+        <div className="flex items-center justify-between gap-3 mb-8">
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink transition"
+          >
+            <ArrowLeft size={16} />
+            Back to trips
+          </button>
+          <ShareButton type="trip" id={trip.id} label="Share this trip" />
+        </div>
 
         {/* Page heading */}
         <div className="mb-8">
@@ -180,10 +185,10 @@ export default function TripThreadChatPage() {
                 />
               )}
 
-              {trip.maxGroupSize && (
+              {tripCapacity(trip).label && (
                 <InfoPill
                   icon={<Users size={14} />}
-                  label={`Up to ${trip.maxGroupSize}`}
+                  label={tripCapacity(trip).label!}
                 />
               )}
             </div>

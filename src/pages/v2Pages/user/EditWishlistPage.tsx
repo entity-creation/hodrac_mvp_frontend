@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserWishlistDetail } from "../../../hooks/v2Hooks/useData";
 import { userWishlistsApi } from "../../../dataStore/v2Api/client";
 import { friendlyError } from "../../../utils/v2Utils/apiErrors";
 import { Button, Skeleton, EmptyState } from "../../../components/v2Components/ui";
+import WishlistSharePanel from "../../../components/v2Components/share/WishlistSharePanel";
 
 export default function EditWishlistPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: wishlist, loading, error } = useUserWishlistDetail(id!);
+  const { data: wishlist, loading, error, refetch } = useUserWishlistDetail(id!);
 
   const [form, setForm] = useState({
     wishlistName:        "",
@@ -24,9 +25,12 @@ export default function EditWishlistPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Populate form when wishlist loads
+  // Fill the form once per wishlist. Later refetches (to pick up a fresh xmin
+  // after saving or toggling sharing) must not overwrite unsaved edits.
+  const filledFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!wishlist) return;
+    if (!wishlist || filledFor.current === wishlist.wishlistId) return;
+    filledFor.current = wishlist.wishlistId;
     setForm({
       wishlistName:          wishlist.wishlistName,
       wishlistDescription:   wishlist.wishlistDescription,
@@ -36,7 +40,8 @@ export default function EditWishlistPage() {
     });
   }, [wishlist]);
 
-  if (loading) return <EditSkeleton />;
+  // Show the skeleton only on first load, not during background refetches.
+  if (loading && !wishlist) return <EditSkeleton />;
   if (error || !wishlist) return (
     <div className="min-h-screen flex items-center justify-center">
       <EmptyState emoji="😕" title="Wishlist not found" action={<Button onClick={() => navigate(-1)}>Go back</Button>} />
@@ -60,6 +65,9 @@ export default function EditWishlistPage() {
       // xmin system column. If another collaborator saved between our GET and
       // this PUT, the server returns 409 and we show a clear message.
       await userWishlistsApi.update(id!, { ...form, xmin: wishlist?.xmin });
+      // The save changed xmin on the server; fetch it so the next save doesn't
+      // report a false edit conflict.
+      refetch();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
@@ -120,6 +128,10 @@ export default function EditWishlistPage() {
         </div>
 
         <div className="flex flex-col gap-6">
+
+          {(wishlist.isUserOwner || wishlist.userRole === "Owner") && (
+            <WishlistSharePanel wishlist={wishlist} onChanged={refetch} />
+          )}
 
           {/* Name */}
           <Field label="Trip Name">

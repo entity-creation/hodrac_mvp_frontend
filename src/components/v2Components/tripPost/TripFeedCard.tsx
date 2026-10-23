@@ -10,6 +10,7 @@ import { tripClient } from "../../../dataStore/v2Api/client";
 import { useTripInterestUpdatedHub, type TripInterestUpdate } from "../../../hooks/v2Hooks/useSignalR";
 import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
 import { colourwayFor } from "../../../utils/v2Utils/format";
+import { tripCapacity } from "../../../utils/v2Utils/trips";
 import { Modal } from "../ui";
 import { isApiError, normalizeInterestStatus } from "../../../dataStore/v2Api/client";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
@@ -52,6 +53,7 @@ export default function TripFeedCard({
   const requireAuth = useRequireAuth();
 
   const isAuthor = !!currentUserId && trip.authorUserId === currentUserId;
+  const capacity = tripCapacity(trip);
   const colour = colourwayFor(trip.id);
   const extraStops = Math.max(0, trip.stops.length - VISIBLE_STOPS);
 
@@ -125,10 +127,14 @@ export default function TripFeedCard({
           <CalendarDays className="w-3.5 h-3.5" />
           {dateLabel}
         </span>
-        {trip.maxGroupSize && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 bg-white/70 backdrop-blur-md rounded-full px-3 py-1 text-xs font-medium text-ink">
+        {capacity.label && (
+          <span
+            className={`absolute top-3 right-3 inline-flex items-center gap-1.5 backdrop-blur-md rounded-full px-3 py-1 text-xs font-medium ${
+              capacity.isFull ? "bg-ink/80 text-white" : "bg-white/70 text-ink"
+            }`}
+          >
             <Users className="w-3.5 h-3.5" />
-            {trip.maxGroupSize}
+            {capacity.label}
           </span>
         )}
       </div>
@@ -136,7 +142,7 @@ export default function TripFeedCard({
       {/* Content — every row has a fixed height */}
       <div className="p-5 flex flex-col flex-1">
         <h3 className="text-xl font-normal text-ink leading-tight truncate" title={trip.destinationLabel}>
-          {trip.destinationLabel}
+          <Link to={`/trips/${trip.id}`} className="hover:underline underline-offset-4">{trip.destinationLabel}</Link>
         </h3>
 
         {/* Stops: single row */}
@@ -179,11 +185,11 @@ export default function TripFeedCard({
           <div className="pt-4 border-t border-line flex items-center gap-2 h-14">
             {!isAuthor && (
               <button
-                disabled={busy || blocked || !!myInterestStatus}
+                disabled={busy || blocked || !!myInterestStatus || (capacity.isFull && !myInterestStatus)}
                 onClick={handleInterested}
                 title={error || undefined}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  blocked
+                  blocked || (capacity.isFull && !myInterestStatus)
                     ? "bg-cream-deep text-ink-muted cursor-default"
                     : error
                       ? "bg-red-50 text-red-700 border border-red-200"
@@ -192,7 +198,13 @@ export default function TripFeedCard({
                         : "bg-ink text-white hover:bg-ink-soft"
                 }`}
               >
-                {blocked ? "Unavailable" : error ? "Try again" : interestButtonLabel(myInterestStatus, busy)}
+                {blocked
+                  ? "Unavailable"
+                  : error
+                    ? "Try again"
+                    : capacity.isFull && !myInterestStatus
+                      ? "Trip full"
+                      : interestButtonLabel(myInterestStatus, busy)}
               </button>
             )}
 

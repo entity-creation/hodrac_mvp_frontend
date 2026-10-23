@@ -16,6 +16,7 @@ import { wishlistsApi } from "../../../dataStore/v2Api/client";
 import { createTripForPlacePath } from "../../../utils/v2Utils/routes";
 import type { WishlistCard } from "../../../types";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
+import ShareButton from "../../../components/v2Components/share/ShareButton";
 
 const SAFETY = [
   { label: "", color: "var(--color-ink-muted)" },
@@ -167,7 +168,10 @@ export default function DestinationDetailPage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <SaveButton saved={isDestinationSaved(dest.destinationId)} onToggle={() => toggleDestination(dest.destinationId)} />
+        <div className="flex items-center gap-2">
+          <ShareButton type="destination" id={dest.destinationId} label="Share this destination" />
+          <SaveButton saved={isDestinationSaved(dest.destinationId)} onToggle={() => toggleDestination(dest.destinationId)} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">

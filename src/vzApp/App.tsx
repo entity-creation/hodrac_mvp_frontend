@@ -43,6 +43,8 @@ import BrowseTripPage     from "../pages/v2Pages/trip/BrowseTripPage";
 import CreateTripPage     from "../pages/v2Pages/trip/CreateTripPage";
 import TripThreadChatPage from "../pages/v2Pages/trip/TripThreadChatPage";
 import TripHubPage        from "../pages/v2Pages/trip/TripHubPage";
+import TripPage           from "../pages/v2Pages/trip/TripPage";
+import SharedWishlistPage from "../pages/v2Pages/shared/SharedWishlistPage";
 
 // Business & info
 import PartnersPage  from "../pages/v2Pages/partners/PartnersPage";
@@ -110,6 +112,10 @@ export default function App() {
             <Route path="/explore/destinations" element={<ExploreDestinationsPage />} />
             <Route path="/search"               element={<SearchResultsPage />} />
             <Route path="/browse-trip"          element={<BrowseTripPage />} />
+
+            {/* Shareable pages (no login). Paths match the backend's share redirects. */}
+            <Route path="/trips/:id"               element={<TripPage />} />
+            <Route path="/shared/wishlists/:token" element={<SharedWishlistPage />} />
 
             {/* Detail — public */}
             <Route path="/wishlists/:id/:slug"    element={<WishlistDetailPage />} />

@@ -20,6 +20,9 @@ import type {
   TripPostStatus,
   TripInterestStatus,
   ExchangeRates,
+  ShareType,
+  ShareInfo,
+  WishlistShareLink,
 } from "../../types/index";
 import { TRIP_STATUS_CODE } from "../../types/index";
 import { withPreviewPartner, withPreviewPartnerList } from "../../utils/v2Utils/partnerPreview";
@@ -327,6 +330,9 @@ export const tripClient: TripApiClient = {
 
   getTrip: (id: string) => get<TripPost>(`/api/trips/${id}`).then(normalizeTrip),
 
+  // No-login trip page: no author or head-counts; 404 if hidden.
+  getPublicTrip: (id: string) => get<TripPost>(`/api/trips/public/${id}`).then(normalizeTrip),
+
   browseTrips: (filters: BrowseTripsFilters) => get<TripPost[]>(
     `/api/trips/browse${buildQuery({
       dest: filters.destination,
@@ -516,6 +522,10 @@ export const userWishlistsApi = {
   byId:   (id: string) => get<WishlistDetail>(`/api/user-wishlists/${id}`),
   shared: () => get<WishlistCard[]>("/api/shared-wishlists"),
 
+  // Owner-only link sharing. Turning it on/off counts as an edit (bumps xmin).
+  share: (id: string) => post<WishlistShareLink>(`/api/user-wishlists/${id}/share`, {}),
+  unshare: (id: string) => del<void>(`/api/user-wishlists/${id}/share`),
+
   update: (id: string, data: {
     wishlistName?: string;
     wishlistDescription?: string;
@@ -560,6 +570,17 @@ export const eventsApi = {
   track: (eventType: string, entityId: string, entityTags: string[] = [], page = "", position = 0) =>
     post<void>("/api/events/interaction", { eventType, entityId, entityTags, page, position })
       .catch(() => {}), // fire-and-forget, never throw
+};
+
+// ─── Sharing API ──────────────────────────────────────────────────────────────
+
+export const shareApi = {
+  // For shared-wishlist, `id` is the share token.
+  info: (type: ShareType, id: string) =>
+    get<ShareInfo>(`/api/share/${type}/${encodeURIComponent(id)}`),
+  // Read-only view of a user's wishlist opened from a share link (404 once revoked).
+  sharedWishlist: (token: string) =>
+    get<WishlistDetail>(`/api/shared/wishlists/${encodeURIComponent(token)}`),
 };
 
 // ─── Currency API ─────────────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ import type { ItineraryDay, ItineraryItem, WishlistCreatorAttributionDto } from 
 import { useWishlistSignalR } from "../../../hooks/v2Hooks/useSignalR";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
+import ShareButton from "../../../components/v2Components/share/ShareButton";
 
 const PLATFORM_ICONS: Record<string, string> = {
   YouTube: "▶",
@@ -238,7 +239,10 @@ export default function WishlistDetailPage() {
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <SaveButton saved={isWishlistSaved(wishlist.wishlistId)} onToggle={() => toggleWishlist(wishlist.wishlistId)} />
+          <div className="flex items-center gap-2">
+            <ShareButton type="wishlist" id={wishlist.wishlistId} label="Share this trip" />
+            <SaveButton saved={isWishlistSaved(wishlist.wishlistId)} onToggle={() => toggleWishlist(wishlist.wishlistId)} />
+          </div>
         </div>
 
         <div className={`relative aspect-16/9 md:aspect-21/9 rounded-2xl overflow-hidden ${colour.bg}`}>

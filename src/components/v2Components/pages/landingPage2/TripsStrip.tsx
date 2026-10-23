@@ -7,6 +7,7 @@ import { Section } from "../../ui";
 import { colourwayFor } from "../../../../utils/v2Utils/format";
 import { ROUTES, tripsForPlacePath } from "../../../../utils/v2Utils/routes";
 import type { TripPost } from "../../../../types";
+import { tripCapacity } from "../../../../utils/v2Utils/trips";
 
 function dateLabel(t: TripPost) {
   if (t.isDateFlexible || !t.startDate) return "Flexible dates";
@@ -68,7 +69,7 @@ export default function TripsStrip() {
                     <p className="text-sm text-ink-soft line-clamp-2 min-h-[2lh]">{t.caption}</p>
                     <p className="mt-auto inline-flex items-center gap-1.5 text-xs text-ink-muted">
                       <Users className="w-3.5 h-3.5" />
-                      {t.maxGroupSize ? `Group of up to ${t.maxGroupSize}` : "Open to companions"}
+                      {tripCapacity(t).label ?? "Open to companions"}
                     </p>
                   </div>
                 </Link>
