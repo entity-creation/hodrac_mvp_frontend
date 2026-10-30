@@ -80,9 +80,16 @@ export const isApiError = (e: unknown, status?: number): e is ApiError =>
 
 // ASP.NET ValidationProblemDetails: { errors: { "$.poolType": ["…"], Name: ["…"] } }.
 // Returns up to three "Field: message" parts, or null if there are none.
-function validationMessage(errors: unknown): string | null {
+// Field-level detail for admin screens only; users see the plain message.
+export function validationDetails(e: unknown): string | null {
+  if (!(e instanceof ApiError)) return null;
+  const errors = (e.body as Record<string, unknown> | undefined)?.errors;
   if (!errors || typeof errors !== "object" || Array.isArray(errors)) return null;
-  const parts = Object.entries(errors as Record<string, unknown>).flatMap(([field, msgs]) => {
+  const entries = Object.entries(errors as Record<string, unknown>);
+  // "The request field is required." only echoes a JSON conversion error on
+  // another field; drop it when that error is present.
+  const fieldErrors = entries.length > 1 ? entries.filter(([field]) => field !== "request") : entries;
+  const parts = fieldErrors.flatMap(([field, msgs]) => {
     const name = field.replace(/^\$\.?/, "");
     return (Array.isArray(msgs) ? msgs : [msgs])
       .filter((m): m is string => typeof m === "string" && !!m.trim())
@@ -91,12 +98,9 @@ function validationMessage(errors: unknown): string | null {
   return parts.length ? parts.slice(0, 3).join("; ") : null;
 }
 
-// Accepts { error }, { message }, ASP.NET ProblemDetails ({ title, detail })
-// and validation errors ({ errors }), preferring the specific field messages.
+// Accepts { error }, { message } and ASP.NET ProblemDetails ({ title, detail }).
 function errorMessage(body: unknown, status: number): string {
   const b = (body ?? {}) as Record<string, unknown>;
-  const validation = validationMessage(b.errors);
-  if (validation) return validation;
   const msg = [b.error, b.message, b.detail, b.title].find(v => typeof v === "string" && v.trim());
   if (msg) return msg as string;
   if (status === 429) return "Too many requests. Please wait a minute and try again.";
@@ -228,7 +232,7 @@ export async function downloadFile(path: string, fallbackName: string): Promise<
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, errorMessage(body, res.status));
+    throw new ApiError(res.status, errorMessage(body, res.status), body);
   }
 
   const disposition = res.headers.get("Content-Disposition") ?? "";

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { friendlyError } from "../utils/v2Utils/apiErrors";
+import { isApiError, validationDetails } from "../dataStore/v2Api/client";
 
 // Data-loading and action hooks shared by every admin section.
 
@@ -61,7 +62,9 @@ export function useAction() {
         if (opts.success) notify(opts.success);
         return { ok: true as const, result };
       } catch (e) {
-        notify(friendlyError(e, opts.errors ?? {}, opts.fallback ?? "Something went wrong."), "error");
+        const status = isApiError(e) ? e.status : undefined;
+        const mapped = status !== undefined && opts.errors?.[status];
+        notify(mapped || validationDetails(e) || friendlyError(e, opts.errors ?? {}, opts.fallback ?? "Something went wrong."), "error");
         return { ok: false as const, result: undefined };
       } finally {
         setBusy(false);

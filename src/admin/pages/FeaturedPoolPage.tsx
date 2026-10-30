@@ -50,7 +50,9 @@ function EntryDrawer({ entry, onClose, onSaved }: { entry: AdminFeaturedPoolEntr
     };
 
     if (!entry) {
-      const r = await run(() => adminApi.featuredPool.create({ wishlistId: wishlist.id, poolType, ...typed }), { success: "Added to the featured pool.", errors });
+      // New entries: leave out fields that don't apply instead of sending null.
+      const fields = Object.fromEntries(Object.entries(typed).filter(([, v]) => v != null)) as FeaturedPoolInput;
+      const r = await run(() => adminApi.featuredPool.create({ wishlistId: wishlist.id, poolType, ...fields }), { success: "Added to the featured pool.", errors });
       if (r.ok) onSaved();
       return;
     }
