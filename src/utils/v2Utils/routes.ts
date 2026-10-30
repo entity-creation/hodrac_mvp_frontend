@@ -12,6 +12,8 @@ export const ROUTES = {
         REGISTER: "/auth/register",
         BROWSETRIPS: "/browse-trip",
         PARTNERS: "/partners",
+        TERMS: "/terms",
+        PRIVACY: "/privacy",
     },
     AUTH: {
         SAVED: "/saved",

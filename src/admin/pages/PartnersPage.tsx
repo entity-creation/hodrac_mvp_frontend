@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { Copy, ExternalLink, Plus } from "lucide-react";
+import { Copy, Download, ExternalLink, Plus } from "lucide-react";
 import {
   adminApi, fillDailySeries,
   type AdminPartnerDetail, type AdminPartnerLink, type AdminPartnerSummary,
-  type ClickStats, type PartnerInput, type PartnerLinkInput,
+  type ClickStats, type ClickStatsQuery, type PartnerInput, type PartnerLinkInput,
 } from "../api";
+import { PartnerAudiencePanel } from "../insightsUi";
 import {
   AdminPage, Btn, Check, ConfirmBtn, DailyBars, DataTable, DetailList, Drawer, ErrorBlock, Field, LoadingBlock, NumberInput, Panel, Pill, SearchBox, StatCard, TextInput, type Column,
 } from "../ui";
@@ -95,17 +96,71 @@ function FormError({ children }: { children: ReactNode }) {
   return <p className="text-sm text-red-700">{children}</p>;
 }
 
+// Readable names for the `src` the public site sends with each click.
+const SOURCE_LABELS: Record<string, string> = {
+  destination_detail: "Destination page",
+  destination_card: "Destination card",
+  wishlist_detail: "Wishlist page",
+  wishlist_card: "Wishlist card",
+  featured: "Featured",
+  search: "Search",
+  share: "Shared link",
+  trip: "Trip page",
+  other: "Other",
+  unknown: "Not specified",
+};
+
+function SourceBars({ rows }: { rows: ClickStats["bySource"] }) {
+  const sorted = [...(rows ?? [])].sort((a, b) => b.clicks - a.clicks);
+  const total = sorted.reduce((s, r) => s + r.clicks, 0);
+  const max = Math.max(1, ...sorted.map(r => r.clicks));
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-ink font-sans mb-3">Where clicks came from</h3>
+      {sorted.length === 0 ? (
+        <p className="text-sm text-ink-muted">No clicks in this range.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {sorted.map(r => {
+            const unknown = r.source === "unknown";
+            return (
+              <li key={r.source} className="text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`truncate ${unknown ? "text-ink-muted italic" : "text-ink"}`} title={r.source}>
+                    {SOURCE_LABELS[r.source] ?? r.source}
+                  </span>
+                  <span className="shrink-0 text-xs text-ink-soft tabular-nums">
+                    {fmtNumber(r.clicks)} <span className="text-ink-muted">· {total ? Math.round((r.clicks / total) * 100) : 0}%</span>
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-cream-deep overflow-hidden">
+                  <div className={`h-full rounded-full ${unknown ? "bg-ink/25" : "bg-ink/80"}`} style={{ width: `${(r.clicks / max) * 100}%` }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // Click stats with a from/to date range (defaults to the last 30 days).
-export function ClickStatsPanel({ load, title = "Clicks" }: {
-  load: (range: { from: string; to: string }) => Promise<ClickStats>; title?: string;
+// `actions` gets the selected range, e.g. for an export button.
+export function ClickStatsPanel({ load, title = "Clicks", actions }: {
+  load: (q: ClickStatsQuery) => Promise<ClickStats>;
+  title?: string;
+  actions?: (range: { from: string; to: string }) => ReactNode;
 }) {
   const today = new Date();
   const [to, setTo] = useState(() => isoDay(today));
   const [from, setFrom] = useState(() => isoDay(new Date(today.getTime() - 29 * 86400000)));
+  const [includeBots, setIncludeBots] = useState(false);
   const valid = !!from && !!to && from <= to;
+  const range = { from: `${from}T00:00:00Z`, to: `${to}T23:59:59Z` };
   const { data, loading, error, reload } = useQuery(
-    () => (valid ? load({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59Z` }) : Promise.resolve(null)),
-    [from, to, valid]
+    () => (valid ? load({ ...range, includeBots }) : Promise.resolve(null)),
+    [from, to, valid, includeBots]
   );
   const points = data ? fillDailySeries(data.daily.map(d => ({ date: d.date, clicks: d.clicks })), from, daysBetween(from, to)) : [];
 
@@ -117,6 +172,7 @@ export function ClickStatsPanel({ load, title = "Clicks" }: {
         <span className="text-xs text-ink-muted">to</span>
         <input type="date" value={to} min={from} onChange={e => setTo(e.target.value)} aria-label="To"
           className="rounded-lg border border-line bg-white px-2 py-1 text-xs text-ink focus:outline-none focus:border-ink" />
+        {valid && actions?.(range)}
       </div>
     }>
       {!valid ? (
@@ -127,10 +183,19 @@ export function ClickStatsPanel({ load, title = "Clicks" }: {
         <LoadingBlock />
       ) : data ? (
         <div className={`flex flex-col gap-4 ${loading ? "opacity-60" : ""}`}>
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard label="Total clicks" value={fmtNumber(data.totalClicks)} />
-            <StatCard label="Unique users" value={fmtNumber(data.uniqueUsers)} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Check label="Include bots" checked={includeBots} onChange={setIncludeBots} />
+            {!includeBots && data.botClicksExcluded > 0 && (
+              <span className="text-xs text-ink-muted">{fmtNumber(data.botClicksExcluded)} bot/preview clicks hidden</span>
+            )}
           </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="Clicks" value={fmtNumber(data.totalClicks)} />
+            <StatCard label="Unique visitors" value={fmtNumber(data.uniqueVisitors)} hint="Logged in or not" />
+            <StatCard label="Logged-in clicks" value={fmtNumber(data.loggedInClicks)} />
+            <StatCard label="Unique users" value={fmtNumber(data.uniqueUsers)} hint="Logged in only" />
+          </div>
+          <SourceBars rows={data.bySource} />
           <DailyBars points={points} label="Clicks per day" />
         </div>
       ) : null}
@@ -224,6 +289,7 @@ function LinkDrawer({ open, partnerId, link, onClose, onSaved }: {
   const [bookingUrl, setBookingUrl] = useState(link?.bookingUrl ?? "");
   const [cta, setCta] = useState(link?.ctaLabel ?? "");
   const [isSponsored, setIsSponsored] = useState(link?.isSponsored ?? false);
+  const [appendUtm, setAppendUtm] = useState(link?.appendUtm ?? true);
   const [priority, setPriority] = useState<number | null>(link?.priority ?? 0);
   const [isActive, setIsActive] = useState(link?.isActive ?? true);
   const [startsAt, setStartsAt] = useState(toLocalInput(link?.startsAt));
@@ -258,6 +324,7 @@ function LinkDrawer({ open, partnerId, link, onClose, onSaved }: {
         bookingUrl: bookingUrl.trim(),
         ctaLabel: nullIfEmpty(cta),
         isSponsored,
+        appendUtm,
         priority: priority ?? 0,
         isActive,
         startsAt: s,
@@ -277,6 +344,7 @@ function LinkDrawer({ open, partnerId, link, onClose, onSaved }: {
     if (bookingUrl.trim() !== link.bookingUrl) body.bookingUrl = bookingUrl.trim();
     if (nullIfEmpty(cta) !== (link.ctaLabel ?? null)) body.ctaLabel = nullIfEmpty(cta);
     if (isSponsored !== link.isSponsored) body.isSponsored = isSponsored;
+    if (appendUtm !== (link.appendUtm ?? true)) body.appendUtm = appendUtm;
     if ((priority ?? 0) !== link.priority) body.priority = priority ?? 0;
     if (isActive !== link.isActive) body.isActive = isActive;
     if (startsAt !== toLocalInput(link.startsAt)) {
@@ -347,6 +415,13 @@ function LinkDrawer({ open, partnerId, link, onClose, onSaved }: {
             <Check label="Sponsored" checked={isSponsored} onChange={setIsSponsored} />
             <Check label="Active" checked={isActive} onChange={setIsActive} />
           </div>
+          <div className="flex flex-col gap-1">
+            <Check label="Add Hodrac tracking tags to the link" checked={appendUtm} onChange={setAppendUtm} />
+            <p className="text-xs text-ink-muted pl-6">
+              Adds utm_source=hodrac and similar tags so the partner sees Hodrac visits in their own analytics.
+              Turn this off only if their booking page breaks with extra URL parameters.
+            </p>
+          </div>
           {err && <FormError>{err}</FormError>}
         </div>
 
@@ -362,7 +437,7 @@ function LinkDrawer({ open, partnerId, link, onClose, onSaved }: {
               <p className="text-xs text-ink-muted mt-2">Created {fmtDateTime(link.createdAt)}</p>
             </Panel>
 
-            <ClickStatsPanel title="Link clicks" load={range => adminApi.partnerLinks.stats(link.linkId, range)} />
+            <ClickStatsPanel title="Link clicks" load={q => adminApi.partnerLinks.stats(link.linkId, q)} />
 
             <Panel title="Remove">
               <div className="flex flex-col gap-3">
@@ -392,7 +467,16 @@ function PartnerDetailDrawer({ partnerId, onClose, onChanged }: {
   const { data, loading, error, reload } = useQuery<AdminPartnerDetail>(() => adminApi.partners.get(partnerId), [partnerId]);
   const [editing, setEditing] = useState(false);
   const [linkDrawer, setLinkDrawer] = useState<{ link: AdminPartnerLink | null } | null>(null);
+  const [tab, setTab] = useState<"overview" | "audience">("overview");
   const { run, busy } = useAction();
+  const exporter = useAction();
+
+  const exportCsv = (range: { from: string; to: string }) => {
+    if (!data) return;
+    exporter.run(() => adminApi.partners.exportClicks(partnerId, data.name, range), {
+      errors: { 404: "This partner no longer exists." }, fallback: "Couldn't export clicks.",
+    });
+  };
 
   const toggleActive = async () => {
     if (!data) return;
@@ -421,7 +505,14 @@ function PartnerDetailDrawer({ partnerId, onClose, onChanged }: {
       ),
     },
     { key: "cta", header: "CTA", render: l => l.ctaLabel ?? <span className="text-ink-muted">Default</span> },
-    { key: "sponsored", header: "Sponsored", render: l => (l.isSponsored ? <Pill tone="warn">Sponsored</Pill> : <span className="text-ink-muted">—</span>) },
+    {
+      key: "sponsored", header: "Sponsored", render: l => (
+        <span className="inline-flex flex-wrap gap-1">
+          {l.isSponsored ? <Pill tone="warn">Sponsored</Pill> : <span className="text-ink-muted">—</span>}
+          {l.appendUtm === false && <Pill>No UTM</Pill>}
+        </span>
+      ),
+    },
     { key: "priority", header: "Priority", render: l => fmtNumber(l.priority), className: "text-right" },
     { key: "active", header: "Status", render: l => <ActivePill active={l.isActive} /> },
     {
@@ -448,6 +539,16 @@ function PartnerDetailDrawer({ partnerId, onClose, onChanged }: {
               <Btn size="sm" onClick={() => setEditing(true)}>Edit</Btn>
               <Btn size="sm" loading={busy} onClick={toggleActive}>{data.isActive ? "Deactivate" : "Activate"}</Btn>
             </div>
+            <div className="flex gap-1 border-b border-line overflow-x-auto" role="tablist">
+              {([["overview", "Overview"], ["audience", "Who clicks"]] as const).map(([id, label]) => (
+                <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+                  className={`px-3 py-2 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${tab === id ? "border-ink text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "audience" ? <PartnerAudiencePanel partnerId={partnerId} /> : <>
             <DetailList rows={[
               ["Default CTA", data.defaultCtaLabel],
               ["Logo URL", data.logoUrl ? <a href={data.logoUrl} target="_blank" rel="noreferrer noopener" className="underline underline-offset-4">{truncate(data.logoUrl, 60)}</a> : null],
@@ -463,7 +564,13 @@ function PartnerDetailDrawer({ partnerId, onClose, onChanged }: {
                 onRowClick={l => setLinkDrawer({ link: l })} empty="This partner has no links yet." />
             </div>
 
-            <ClickStatsPanel title="Partner clicks" load={range => adminApi.partners.stats(partnerId, range)} />
+            <ClickStatsPanel title="Partner clicks" load={q => adminApi.partners.stats(partnerId, q)}
+              actions={range => (
+                <Btn size="sm" loading={exporter.busy} onClick={() => exportCsv(range)}>
+                  <Download className="w-3.5 h-3.5" /> Export CSV
+                </Btn>
+              )} />
+            </>}
           </div>
         )}
       </Drawer>

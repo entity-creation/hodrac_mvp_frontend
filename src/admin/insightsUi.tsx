@@ -281,3 +281,45 @@ export function DestinationAudiencePanel({ destinationId }: { destinationId: str
     </div>
   );
 }
+
+// Too little data to say anything: scores are hidden (fewer than minBucketSize
+// people) or most answers were merged into "other".
+function isThinAudience(a: InsightAudience): boolean {
+  if (a.averageVectors === null) return true;
+  const buckets = [a.whoTheyTravelWith, a.tripTypePreference, a.budgetProfile, a.primaryPriority, a.primaryTravelerType, a.incomeBracket]
+    .flatMap(b => b ?? []);
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  const other = buckets.filter(b => isOther(b.key)).reduce((s, b) => s + b.count, 0);
+  return total > 0 && other / total > 0.5;
+}
+
+// "Who clicks this partner's links" (logged-in clicks, last N days).
+export function PartnerAudiencePanel({ partnerId }: { partnerId: string }) {
+  const q = useInsightQuery(() => adminApi.insights.partnerAudience(partnerId), [partnerId]);
+  if (q.loading && !q.data) return <LoadingBlock />;
+  if (q.error) return <InsightsError error={q.error} onRetry={q.reload} />;
+  if (!q.data) return null;
+  const d = q.data;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm text-ink-muted">
+        Logged-in clicks in the last {d.windowDays} days. Logged-out visitors have no profile, so they aren't included.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="Logged-in clicks" value={fmtNumber(d.loggedInClickCount)} />
+        <StatCard label="Unique people" value={fmtNumber(d.uniqueUsers)} />
+      </div>
+      {isThinAudience(d.clickers) ? (
+        <Panel title="Not enough data yet">
+          <p className="text-sm text-ink-soft">
+            Groups smaller than {d.minBucketSize} people are merged into "other" and scores are hidden to protect
+            privacy. The breakdown appears once more signed-in people have clicked this partner's links.
+          </p>
+        </Panel>
+      ) : (
+        <AudienceView audience={d.clickers} minBucketSize={d.minBucketSize} compact />
+      )}
+    </div>
+  );
+}

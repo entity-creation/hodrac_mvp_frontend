@@ -15,7 +15,7 @@ const SAMPLE_PARTNER: Partner = {
   name: "Acme Travel",
   logoUrl: null,
   bookingUrl: "https://example.com/book",
-  trackingUrl: null,
+  trackingUrl: "https://example.com/out?c=preview",
   ctaLabel: "Book with Acme Travel",
   isSponsored: true,
 };

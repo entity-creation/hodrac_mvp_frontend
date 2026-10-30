@@ -110,7 +110,11 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/40">© {new Date().getFullYear()} Hodrac. All rights reserved.</p>
+          <div className="flex flex-col sm:flex-row items-center gap-x-5 gap-y-2 text-xs text-white/40">
+            <p>© {new Date().getFullYear()} Hodrac, operated by Ionva Limited. All rights reserved.</p>
+            <Link to={ROUTES.PUBLIC.TERMS} className="hover:text-white transition-colors">Terms</Link>
+            <Link to={ROUTES.PUBLIC.PRIVACY} className="hover:text-white transition-colors">Privacy</Link>
+          </div>
           <a
             href="https://www.tiktok.com/@hodrac"
             target="_blank"

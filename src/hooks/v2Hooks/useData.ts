@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   lookupApi, destinationsApi, wishlistsApi, savedApi, userWishlistsApi, eventsApi,
 } from "../../dataStore/v2Api/client";
@@ -7,6 +7,7 @@ import type {
   WishlistCard, DestinationSummary, SavedContent, CollaboratorDto,
 } from "../../types";
 import { useRequireAuth } from "./useRequireAuth";
+import { useAuth } from "./useAuth";
 
 // ─── Generic async hook helper ────────────────────────────────────────────────
 
@@ -35,6 +36,33 @@ function useAsync<T>(
   return { data, loading, error, refetch };
 }
 
+// Detail data with a partner carries a trackingUrl that holds a personal token
+// (valid 7 days). Refetch when the signed-in user changes, and when a tab comes
+// back after sitting open long enough for the token to be close to expiring.
+const PARTNER_TOKEN_REFRESH_MS = 6 * 24 * 60 * 60 * 1000;
+
+function usePersonalizedAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
+  const { user } = useAuth();
+  const result = useAsync(fn, [...deps, user?.userId ?? null]);
+  const { data, refetch } = result;
+
+  const loadedAt = useRef(0);
+  useEffect(() => { if (data) loadedAt.current = Date.now(); }, [data]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && loadedAt.current
+          && Date.now() - loadedAt.current > PARTNER_TOKEN_REFRESH_MS) {
+        refetch();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refetch]);
+
+  return result;
+}
+
 // ─── Filter options (cached in module scope) ──────────────────────────────────
 
 let _filterOptionsCache: FilterOptions | null = null;
@@ -58,11 +86,13 @@ export function useFilterOptions() {
 // ─── Destination detail ───────────────────────────────────────────────────────
 
 export function useDestinationDetail(id: string) {
-  const result = useAsync(() => destinationsApi.byId(id), [id]);
+  const result = usePersonalizedAsync(() => destinationsApi.byId(id), [id]);
 
-  // Fire tracking event when destination is loaded
+  // Fire tracking event once per destination (not again on auth refetches)
+  const trackedId = useRef<string | null>(null);
   useEffect(() => {
-    if (result.data) {
+    if (result.data && trackedId.current !== result.data.destinationId) {
+      trackedId.current = result.data.destinationId;
       eventsApi.track(
         "destination_view",
         result.data.destinationId,
@@ -78,7 +108,7 @@ export function useDestinationDetail(id: string) {
 // ─── Wishlist detail ──────────────────────────────────────────────────────────
 
 export function useWishlistDetail(id: string) {
-  return useAsync<WishlistDetail>(() => wishlistsApi.byId(id), [id]);
+  return usePersonalizedAsync<WishlistDetail>(() => wishlistsApi.byId(id), [id]);
 }
 
 export function useUserWishlistDetail(id: string) {

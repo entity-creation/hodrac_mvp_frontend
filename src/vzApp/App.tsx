@@ -50,6 +50,8 @@ import SharedWishlistPage from "../pages/v2Pages/shared/SharedWishlistPage";
 import PartnersPage  from "../pages/v2Pages/partners/PartnersPage";
 import ContactUsPage from "../pages/contact_us_page";
 import AboutPage     from "../pages/about_page";
+import TermsPage     from "../pages/v2Pages/legal/TermsPage";
+import PrivacyPage   from "../pages/v2Pages/legal/PrivacyPage";
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
 
@@ -148,6 +150,8 @@ export default function App() {
             <Route path="/partners"   element={<PartnersPage />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
             <Route path="/about"      element={<AboutPage />} />
+            <Route path="/terms"      element={<TermsPage />} />
+            <Route path="/privacy"    element={<PrivacyPage />} />
 
             <Route path="*" element={<NotFoundPage />} />
           </Route>

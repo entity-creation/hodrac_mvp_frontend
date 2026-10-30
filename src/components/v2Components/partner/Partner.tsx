@@ -1,38 +1,46 @@
 import { ExternalLink, BadgeCheck } from "lucide-react";
-import { eventsApi } from "../../../dataStore/v2Api/client";
 import { buttonClasses } from "../ui";
 import type { Partner } from "../../../types";
 
+// Where on the site the click came from. The backend records it with the click
+// (anything else is stored as "other").
+export type PartnerClickSource =
+  | "destination_detail" | "destination_card"
+  | "wishlist_detail" | "wishlist_card"
+  | "featured" | "search" | "share" | "trip" | "other";
+
 type PartnerContext = {
-  // What the partner is attached to — sent with the click event and as the
-  // UTM campaign so partners can see which listing sent the traffic.
+  // What the partner is attached to. Only used to pick the default source.
   entityType: "wishlist" | "destination";
   entityId: string;
   entityTags?: string[];
 };
 
-// Where the Book button sends people. The server-side tracking redirect is
-// preferred; otherwise tag the partner's own URL with UTM parameters.
-function partnerHref(partner: Partner, ctx: PartnerContext): string {
-  if (partner.trackingUrl) return partner.trackingUrl;
+// Where the Book button sends people: the server's tracking redirect, which
+// records the click and forwards to the partner. Set `src` with the URL API
+// because trackingUrl already has its own query string.
+function partnerHref(partner: Partner, src: PartnerClickSource): string {
+  // Only the dev preview partner lacks a trackingUrl.
+  if (!partner.trackingUrl) return partner.bookingUrl;
   try {
-    const url = new URL(partner.bookingUrl);
-    url.searchParams.set("utm_source", "hodrac");
-    url.searchParams.set("utm_medium", "referral");
-    url.searchParams.set("utm_campaign", `${ctx.entityType}_${ctx.entityId}`);
+    const url = new URL(partner.trackingUrl);
+    url.searchParams.set("src", src);
     return url.toString();
   } catch {
-    return partner.bookingUrl;
+    return partner.trackingUrl;
   }
 }
 
 // ─── Book button ──────────────────────────────────────────────────────────────
 
 // Sends traffic to the partner that paid for this listing. No login needed.
+// Keep it a plain link (never fetch) and never add rel="noreferrer"; the
+// backend's click tracking relies on both.
 export function PartnerBookingButton({
-  partner, size = "lg", fullWidth = true, className = "", ...ctx
+  partner, size = "lg", fullWidth = true, className = "", source, entityType,
 }: PartnerContext & {
   partner: Partner;
+  source?: PartnerClickSource;
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   className?: string;
@@ -41,12 +49,9 @@ export function PartnerBookingButton({
 
   return (
     <a
-      href={partnerHref(partner, ctx)}
+      href={partnerHref(partner, source ?? `${entityType}_detail`)}
       target="_blank"
       rel="noopener sponsored"
-      onClick={() =>
-        eventsApi.track("partner_click", ctx.entityId, ctx.entityTags ?? [], `${ctx.entityType}_detail:${partner.partnerId}`)
-      }
       className={buttonClasses("primary", size, `${fullWidth ? "w-full" : ""} ${className}`)}
     >
       {label}

@@ -1,4 +1,5 @@
 import { http, downloadFile, isApiError } from "../dataStore/v2Api/client";
+import { slugify } from "../utils/v2Utils/slugify";
 
 // ─── Admin API ────────────────────────────────────────────────────────────────
 // Every route requires an admin login. Times are UTC ISO strings.
@@ -14,6 +15,11 @@ function qs(params: Record<string, unknown>): string {
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
     .join("&");
   return q ? `?${q}` : "";
+}
+
+// Bots are excluded by default; only send the flag when turning them on.
+function statsQs({ includeBots, ...range }: ClickStatsQuery): string {
+  return qs({ ...range, includeBots: includeBots ? true : undefined });
 }
 
 // ─── Shared shapes & enum helpers ─────────────────────────────────────────────
@@ -560,6 +566,8 @@ export interface AdminPartnerLink {
   trackingUrl: string | null;
   ctaLabel: string | null;
   isSponsored: boolean;
+  // Server adds utm_source=hodrac etc. to the partner URL on redirect.
+  appendUtm: boolean;
   priority: number;
   isActive: boolean;
   startsAt: string | null;
@@ -585,6 +593,7 @@ export interface PartnerLinkInput {
   bookingUrl?: string;
   ctaLabel?: string | null;
   isSponsored?: boolean;
+  appendUtm?: boolean;
   priority?: number;
   isActive?: boolean;
   startsAt?: string | null;
@@ -597,8 +606,20 @@ export interface ClickStats {
   from: string;
   to: string;
   totalClicks: number;
-  uniqueUsers: number;
+  uniqueVisitors: number; // logged-in and logged-out
+  loggedInClicks: number;
+  uniqueUsers: number; // logged-in only
+  botClicksExcluded: number;
+  includesBots: boolean;
+  // Where on the site the click came from; "unknown" = no src sent.
+  bySource: { source: string; clicks: number }[];
   daily: { date: string; clicks: number }[];
+}
+
+export interface ClickStatsQuery {
+  from?: string;
+  to?: string;
+  includeBots?: boolean;
 }
 
 export interface AdminPartnerLead {
@@ -681,6 +702,16 @@ export interface DestinationAudienceResponse {
   destinationName: string;
   windowDays: number;
   clickCount: number;
+  uniqueUsers: number;
+  minBucketSize: number;
+  clickers: InsightAudience;
+}
+
+export interface PartnerAudienceResponse {
+  partnerId: string;
+  partnerName: string;
+  windowDays: number;
+  loggedInClickCount: number;
   uniqueUsers: number;
   minBucketSize: number;
   clickers: InsightAudience;
@@ -899,8 +930,10 @@ export const adminApi = {
     update: (id: string, body: PartnerInput) => http.patch<AdminPartnerDetail>(`${A}/partners/${id}`, body),
     activate: (id: string) => http.post<void>(`${A}/partners/${id}/activate`, {}),
     deactivate: (id: string) => http.post<void>(`${A}/partners/${id}/deactivate`, {}),
-    stats: (id: string, range: { from?: string; to?: string } = {}) =>
-      http.get<ClickStats>(`${A}/partners/${id}/stats${qs(range)}`),
+    stats: (id: string, q: ClickStatsQuery = {}) =>
+      http.get<ClickStats>(`${A}/partners/${id}/stats${statsQs(q)}`),
+    exportClicks: (id: string, partnerName: string, range: { from?: string; to?: string } = {}) =>
+      downloadFile(`${A}/partners/${id}/clicks/export${qs(range)}`, `hodrac-${slugify(partnerName) || id}-clicks.csv`),
   },
 
   partnerLinks: {
@@ -911,14 +944,15 @@ export const adminApi = {
     update: (linkId: string, body: PartnerLinkInput) => http.patch<AdminPartnerLink>(`${A}/partner-links/${linkId}`, body),
     // Hard delete, including click history — prefer isActive: false.
     remove: (linkId: string) => http.del<void>(`${A}/partner-links/${linkId}`),
-    stats: (linkId: string, range: { from?: string; to?: string } = {}) =>
-      http.get<ClickStats>(`${A}/partner-links/${linkId}/stats${qs(range)}`),
+    stats: (linkId: string, q: ClickStatsQuery = {}) =>
+      http.get<ClickStats>(`${A}/partner-links/${linkId}/stats${statsQs(q)}`),
   },
 
   insights: {
     audience: () => http.get<InsightsAudienceResponse>(`${A}/insights/audience`),
     wishlistAudience: (id: string) => http.get<WishlistAudienceResponse>(`${A}/insights/wishlists/${id}/audience`),
     destinationAudience: (id: string) => http.get<DestinationAudienceResponse>(`${A}/insights/destinations/${id}/audience`),
+    partnerAudience: (id: string) => http.get<PartnerAudienceResponse>(`${A}/insights/partners/${id}/audience`),
     // 400 if segmentType is invalid (income isn't allowed here) or segment is missing.
     segmentWishlists: (segmentType: Exclude<SegmentType, "income">, segment: string, limit = 20) =>
       http.get<SegmentWishlistsResponse>(`${A}/insights/wishlists${qs({ segmentType, segment, limit })}`),

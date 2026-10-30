@@ -7,6 +7,7 @@ import { authPath, LOGIN_PATH, REGISTER_PATH, safeRedirect } from "../../../util
 import { authApi, isApiError } from "../../../dataStore/v2Api/client";
 import { friendlyError } from "../../../utils/v2Utils/apiErrors";
 import { rawQueryParam } from "../../../utils/v2Utils/queryParams";
+import { ROUTES } from "../../../utils/v2Utils/routes";
 
 // Why the user landed on the login page, shown as a notice above the form.
 const LOGIN_NOTICES: Record<string, string> = {
@@ -265,7 +266,10 @@ export function RegisterPage() {
         </Button>
 
         <p className="text-center text-xs text-ink-muted">
-          By registering you agree to Hodrac's Terms of Service and Privacy Policy.
+          By registering you confirm you're 18 or older and agree to Hodrac's{" "}
+          <Link to={ROUTES.PUBLIC.TERMS} target="_blank" className="underline underline-offset-4 hover:text-ink">Terms of Service</Link>{" "}
+          and{" "}
+          <Link to={ROUTES.PUBLIC.PRIVACY} target="_blank" className="underline underline-offset-4 hover:text-ink">Privacy Policy</Link>.
         </p>
       </form>
     </AuthShell>

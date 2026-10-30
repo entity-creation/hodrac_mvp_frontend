@@ -206,7 +206,8 @@ export default function WishlistDetailPage() {
   const [activeTab, setActiveTab] = useState<"itinerary" | "inclusions" | "info">("itinerary");
   const [travelers, setTravelers] = useState(2);
 
-  if (loading) return <WishlistDetailSkeleton />;
+  // Skeleton only on first load; auth/token refetches update in place.
+  if (loading && wishlist?.wishlistId !== id) return <WishlistDetailSkeleton />;
   if (error || !wishlist) return (
     <EmptyState
       emoji="😕"

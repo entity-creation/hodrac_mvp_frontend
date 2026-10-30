@@ -135,7 +135,8 @@ export default function DestinationDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  if (loading) return <DestinationDetailSkeleton />;
+  // Skeleton only on first load; auth/token refetches update in place.
+  if (loading && dest?.destinationId !== id) return <DestinationDetailSkeleton />;
   if (error || !dest) return (
     <EmptyState
       emoji="😕"
