@@ -45,6 +45,7 @@ export async function getJson<T>(endpoint: string, timeoutMs = 30000): Promise<T
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
   const res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 

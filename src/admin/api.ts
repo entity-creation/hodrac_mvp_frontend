@@ -411,6 +411,18 @@ export interface FeaturedPoolInput {
   resetImpressionsToday?: boolean;
 }
 
+// The admin-chosen landing hero (one at a time; 204 = none set).
+export interface AdminHero {
+  wishlistId: string;
+  wishlistName: string;
+  wishlistHeroImage: string | null;
+  heroUntil: string | null;
+  setAt: string;
+  setByEmail: string | null;
+  // False once heroUntil has passed or the wishlist is no longer public.
+  isActive: boolean;
+}
+
 export interface AdminWishlistDetail {
   wishlistId: string;
   wishlistName: string;
@@ -895,6 +907,14 @@ export const adminApi = {
       remove: (wishlistId: string, attributionId: string) =>
         http.del<void>(`/api/wishlists/${wishlistId}/attributions/${attributionId}`),
     },
+  },
+
+  hero: {
+    get: () => http.get<AdminHero | undefined>(`${A}/hero`).then(h => h ?? null),
+    // Replaces the current hero. 400 if the wishlist isn't public or has no
+    // hero image, or heroUntil isn't in the future.
+    set: (body: { wishlistId: string; heroUntil: string | null }) => http.put<AdminHero>(`${A}/hero`, body),
+    clear: () => http.del<void>(`${A}/hero`),
   },
 
   featuredPool: {

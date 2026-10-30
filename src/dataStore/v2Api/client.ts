@@ -510,6 +510,10 @@ export const wishlistsApi = {
   featured: () =>
     get<WishlistCard[]>("/api/wishlists/featured").then(withPreviewPartnerList),
 
+  // The admin-chosen landing hero; null (204) when none is set or it expired.
+  hero: () =>
+    get<WishlistCard | undefined>("/api/wishlists/hero").then(w => w ?? null),
+
   similar: (id: string, limit = 6) =>
     get<WishlistCard[]>(`/api/wishlists/similar/${id}?limit=${limit}`),
 

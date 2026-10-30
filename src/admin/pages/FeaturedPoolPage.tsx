@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
-import { adminApi, enumName, POOL_TYPES, type AdminFeaturedPoolEntry, type FeaturedPoolInput, type PoolType } from "../api";
+import { adminApi, enumName, POOL_TYPES, type AdminFeaturedPoolEntry, type AdminHero, type FeaturedPoolInput, type PoolType } from "../api";
 import {
-  AdminPage, Btn, Check, ConfirmBtn, DataTable, Drawer, ErrorBlock, Field, NumberInput, Pill, Select, Toolbar, type Column,
+  AdminPage, Btn, Check, ConfirmBtn, DataTable, Drawer, ErrorBlock, Field, LoadingBlock, NumberInput, Panel, Pill, Select,
+  TextInput, Toolbar, type Column,
 } from "../ui";
 import { useAction, useQuery } from "../hooks";
-import { fmtDate, fmtNumber, fmtUsd } from "../format";
+import { fmtDate, fmtDateTime, fmtNumber, fmtUsd, fromLocalInput, toLocalInput } from "../format";
 import { WishlistPicker, type PickedRef } from "./PartnersPage";
 
 const typeOf = (e: AdminFeaturedPoolEntry) => enumName(e.poolType, POOL_TYPES);
@@ -19,6 +20,103 @@ const TYPE_HINT: Record<PoolType, string> = {
 };
 
 const dash = <span className="text-ink-muted">—</span>;
+
+// ─── Landing hero ─────────────────────────────────────────────────────────────
+
+// The wishlist shown in the landing page hero. Without one (or once it
+// expires), the hero falls back to the first featured wishlist with a photo.
+function HeroPanel() {
+  const { data: hero, loading, error, reload } = useQuery(() => adminApi.hero.get(), []);
+  const [editing, setEditing] = useState(false);
+
+  return (
+    <Panel title="Landing page hero" className="mb-6"
+      actions={!editing && !loading && !error && (
+        <Btn size="sm" variant={hero ? "outline" : "primary"} onClick={() => setEditing(true)}>{hero ? "Change" : "Choose hero"}</Btn>
+      )}>
+      {error ? (
+        <ErrorBlock message={error} onRetry={reload} />
+      ) : loading ? (
+        <LoadingBlock />
+      ) : editing ? (
+        <HeroForm hero={hero} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); reload(); }} />
+      ) : hero ? (
+        <HeroSummary hero={hero} onCleared={reload} />
+      ) : (
+        <p className="text-sm text-ink-muted">
+          No hero chosen. The landing page shows the first wishlist from the featured pool below that has a hero image.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
+function HeroSummary({ hero, onCleared }: { hero: AdminHero; onCleared: () => void }) {
+  const { run, busy } = useAction();
+  const clear = async () => {
+    const r = await run(() => adminApi.hero.clear(), { success: "Hero cleared. The landing page falls back to the featured pool." });
+    if (r.ok) onCleared();
+  };
+  return (
+    <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+      <div className="w-full sm:w-40 aspect-4/3 rounded-xl overflow-hidden bg-cream-deep shrink-0">
+        {hero.wishlistHeroImage && <img src={hero.wishlistHeroImage} alt="" className="w-full h-full object-cover" />}
+      </div>
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-ink truncate">{hero.wishlistName}</span>
+          {hero.isActive ? <Pill tone="good">Showing</Pill> : <Pill tone="warn">Not showing</Pill>}
+        </div>
+        <p className="text-sm text-ink-soft">
+          {hero.heroUntil ? `Until ${fmtDateTime(hero.heroUntil)}` : "No end date"}
+          {!hero.isActive && " · expired or no longer public, so the featured pool is used instead"}
+        </p>
+        <p className="text-xs text-ink-muted">
+          Set {fmtDateTime(hero.setAt)}{hero.setByEmail ? ` by ${hero.setByEmail}` : ""}
+        </p>
+      </div>
+      <ConfirmBtn label="Clear" confirmLabel="Clear hero" variant="outline" size="sm" loading={busy} onConfirm={() => { void clear(); }} />
+    </div>
+  );
+}
+
+function HeroForm({ hero, onCancel, onSaved }: { hero: AdminHero | null; onCancel: () => void; onSaved: () => void }) {
+  const [wishlist, setWishlist] = useState<PickedRef | null>(hero ? { id: hero.wishlistId, label: hero.wishlistName } : null);
+  const [until, setUntil] = useState(toLocalInput(hero?.heroUntil ?? null));
+  const [err, setErr] = useState("");
+  const { run, busy } = useAction();
+
+  const save = async () => {
+    setErr("");
+    if (!wishlist) return setErr("Pick a wishlist.");
+    const heroUntil = fromLocalInput(until);
+    if (heroUntil && new Date(heroUntil).getTime() <= Date.now()) return setErr("The end date must be in the future.");
+    const r = await run(() => adminApi.hero.set({ wishlistId: wishlist.id, heroUntil }), {
+      success: "Hero updated. It can take up to a minute to show for visitors who already have the page open.",
+      errors: { 404: "That wishlist no longer exists." },
+    });
+    if (r.ok) onSaved();
+  };
+
+  return (
+    <div className="space-y-4 max-w-xl">
+      <Field label="Wishlist *" hint="Must be public and have a hero image.">
+        <WishlistPicker value={wishlist} onChange={setWishlist} disabled={busy} />
+      </Field>
+      <Field label="Show until" hint="Leave empty to keep it until you change it.">
+        <div className="flex items-center gap-2">
+          <TextInput type="datetime-local" value={until} onChange={e => setUntil(e.target.value)} className="max-w-64" />
+          {until && <Btn size="sm" variant="ghost" onClick={() => setUntil("")}>Clear</Btn>}
+        </div>
+      </Field>
+      {err && <p className="text-sm text-red-700">{err}</p>}
+      <div className="flex gap-2">
+        <Btn variant="primary" loading={busy} onClick={save}>Save hero</Btn>
+        <Btn variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Btn>
+      </div>
+    </div>
+  );
+}
 
 function EntryDrawer({ entry, onClose, onSaved }: { entry: AdminFeaturedPoolEntry | null; onClose: () => void; onSaved: () => void }) {
   const [wishlist, setWishlist] = useState<PickedRef | null>(entry ? { id: entry.wishlistId, label: entry.wishlistName } : null);
@@ -152,6 +250,8 @@ export default function FeaturedPoolPage() {
   return (
     <AdminPage title="Featured pool" description="Wishlists eligible for featured slots: editorial picks, paid placements and random rotation."
       actions={<Btn variant="primary" onClick={() => setDrawer({ entry: null })}><Plus className="w-4 h-4" /> Add entry</Btn>}>
+      <HeroPanel />
+
       <Toolbar>
         <div className="inline-flex flex-wrap gap-1">
           <Btn size="sm" variant={filter === "" ? "primary" : "outline"} onClick={() => setFilter("")}>All · {total}</Btn>

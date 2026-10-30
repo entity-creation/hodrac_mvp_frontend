@@ -233,7 +233,10 @@ async function main() {
   const wishlistLinks = wishlists.map(w => link(wishlistPath(w.wishlistId, w.wishlistName), w.wishlistName));
   const destinationLinks = destinations.map(d =>
     `${link(destinationPath(d.destinationId, d.destinationName), d.destinationName)}${d.location ? ` — ${esc(d.location)}` : ""}`);
-  const featuredWishlists = wishlists.filter(w => w.isFeatured);
+  // Home page leads with the admin-chosen hero, then the featured pool.
+  const hero = await tryGet<WishlistCard | undefined>("/api/wishlists/hero");
+  const pool = (await tryGet<WishlistCard[]>("/api/wishlists/featured")) ?? [];
+  const featuredWishlists = [...(hero ? [hero] : []), ...pool.filter(w => w.wishlistId !== hero?.wishlistId)];
   const featuredDestinations = destinations.filter(d => d.isFeatured);
 
   const pages: Page[] = [

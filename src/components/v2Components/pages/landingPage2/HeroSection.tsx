@@ -29,9 +29,13 @@ export default function HeroSection() {
       })
       .catch(() => setPopular(FALLBACK_SEARCHES));
 
-    // Lead with a featured trip that has a photo.
-    wishlistsApi.featured()
-      .then(r => setFeature(r.find(w => w.wishlistHeroImage) ?? null))
+    // The admin-chosen hero; without one, the first featured trip with a photo.
+    wishlistsApi.hero()
+      .catch(() => null)
+      .then(async hero => hero?.wishlistHeroImage
+        ? hero
+        : (await wishlistsApi.featured()).find(w => w.wishlistHeroImage) ?? null)
+      .then(setFeature)
       .catch(() => setFeature(null))
       .finally(() => setFeatureLoaded(true));
   }, []);
