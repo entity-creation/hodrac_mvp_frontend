@@ -44,6 +44,17 @@ export function enumName<T extends string>(value: unknown, names: readonly T[], 
   return fallback ?? names[0];
 }
 
+// The API returns enums as numbers and may not accept names in JSON bodies;
+// a number is accepted either way, so request bodies send the index.
+export function enumIndex<T extends string>(value: T, names: readonly T[]): number {
+  const i = names.indexOf(value);
+  if (i < 0) throw new Error(`Unknown value "${value}".`);
+  return i;
+}
+
+const withEnum = <B extends object, K extends keyof B>(body: B, key: K, names: readonly string[]) =>
+  body[key] == null ? body : { ...body, [key]: enumIndex(body[key] as string, names) };
+
 export const TRIP_STATUSES = ["Open", "Closed", "Cancelled"] as const;
 export type TripStatus = (typeof TRIP_STATUSES)[number];
 
@@ -899,8 +910,10 @@ export const adminApi = {
 
   featuredPool: {
     list: () => http.get<AdminFeaturedPoolEntry[]>(`${A}/featured-pool`),
-    create: (body: FeaturedPoolInput) => http.post<AdminFeaturedPoolEntry>(`${A}/featured-pool`, body),
-    update: (id: string, body: FeaturedPoolInput) => http.patch<AdminFeaturedPoolEntry>(`${A}/featured-pool/${id}`, body),
+    create: (body: FeaturedPoolInput) =>
+      http.post<AdminFeaturedPoolEntry>(`${A}/featured-pool`, withEnum(body, "poolType", POOL_TYPES)),
+    update: (id: string, body: FeaturedPoolInput) =>
+      http.patch<AdminFeaturedPoolEntry>(`${A}/featured-pool/${id}`, withEnum(body, "poolType", POOL_TYPES)),
     remove: (id: string) => http.del<void>(`${A}/featured-pool/${id}`),
   },
 
@@ -985,7 +998,7 @@ export const adminApi = {
       http.get<AdminPaged<AdminPartnerLead>>(`${A}/partner-leads${qs(p)}`),
     get: (id: string) => http.get<AdminPartnerLead>(`${A}/partner-leads/${id}`),
     update: (id: string, body: { status?: LeadStatus; internalNotes?: string | null }) =>
-      http.patch<AdminPartnerLead>(`${A}/partner-leads/${id}`, body),
+      http.patch<AdminPartnerLead>(`${A}/partner-leads/${id}`, withEnum(body, "status", LEAD_STATUSES)),
   },
 };
 

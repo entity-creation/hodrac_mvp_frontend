@@ -78,9 +78,25 @@ export class ApiError extends Error {
 export const isApiError = (e: unknown, status?: number): e is ApiError =>
   e instanceof ApiError && (status === undefined || e.status === status);
 
-// Accepts { error }, { message } and ASP.NET ProblemDetails ({ title, detail }).
+// ASP.NET ValidationProblemDetails: { errors: { "$.poolType": ["…"], Name: ["…"] } }.
+// Returns up to three "Field: message" parts, or null if there are none.
+function validationMessage(errors: unknown): string | null {
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) return null;
+  const parts = Object.entries(errors as Record<string, unknown>).flatMap(([field, msgs]) => {
+    const name = field.replace(/^\$\.?/, "");
+    return (Array.isArray(msgs) ? msgs : [msgs])
+      .filter((m): m is string => typeof m === "string" && !!m.trim())
+      .map(m => (name ? `${name}: ${m}` : m));
+  });
+  return parts.length ? parts.slice(0, 3).join("; ") : null;
+}
+
+// Accepts { error }, { message }, ASP.NET ProblemDetails ({ title, detail })
+// and validation errors ({ errors }), preferring the specific field messages.
 function errorMessage(body: unknown, status: number): string {
   const b = (body ?? {}) as Record<string, unknown>;
+  const validation = validationMessage(b.errors);
+  if (validation) return validation;
   const msg = [b.error, b.message, b.detail, b.title].find(v => typeof v === "string" && v.trim());
   if (msg) return msg as string;
   if (status === 429) return "Too many requests. Please wait a minute and try again.";
