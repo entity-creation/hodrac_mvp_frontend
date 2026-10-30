@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts", "generate-sitemap.ts"]
+  "include": ["vite.config.ts", "generate-sitemap.ts", "scripts"]
 }

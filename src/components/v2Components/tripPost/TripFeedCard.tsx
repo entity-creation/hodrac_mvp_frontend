@@ -11,6 +11,7 @@ import { useTripInterestUpdatedHub, type TripInterestUpdate } from "../../../hoo
 import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { tripCapacity } from "../../../utils/v2Utils/trips";
+import { destinationPath } from "../../../utils/v2Utils/routes";
 import { Modal } from "../ui";
 import { isApiError, normalizeInterestStatus } from "../../../dataStore/v2Api/client";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
@@ -150,7 +151,7 @@ export default function TripFeedCard({
           {trip.stops.slice(0, VISIBLE_STOPS).map((stop) => (
             <Link
               key={stop.destinationId}
-              to={`/destinations/${stop.destinationId}`}
+              to={destinationPath(stop.destinationId, stop.name)}
               className="shrink min-w-0 truncate inline-flex items-center px-2.5 py-0.5 rounded-full bg-cream border border-line text-xs text-ink-soft hover:text-ink hover:border-ink/30 transition-colors"
             >
               {stop.name}

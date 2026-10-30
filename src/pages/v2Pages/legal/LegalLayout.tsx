@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../utils/v2Utils/routes";
 
@@ -16,10 +16,6 @@ export default function LegalLayout({ title, updated, intro, sections }: {
   intro: ReactNode;
   sections: LegalSection[];
 }) {
-  useEffect(() => {
-    document.title = `${title} · Hodrac`;
-  }, [title]);
-
   return (
     <div className="max-w-5xl mx-auto px-5 md:px-8 pt-10 pb-24">
       <header className="max-w-3xl mb-10">

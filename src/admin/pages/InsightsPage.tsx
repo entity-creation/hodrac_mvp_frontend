@@ -10,6 +10,7 @@ import { useAction, useRawErrorQuery, useToast } from "../hooks";
 import { fmtDateTime, fmtNumber } from "../format";
 import { AudienceView, InsightsError, TagTable } from "../insightsUi";
 import { isApiError } from "../../dataStore/v2Api/client";
+import { wishlistPath } from "../../utils/v2Utils/routes";
 
 const SEGMENT_TYPES: { value: SegmentType; label: string }[] = [
   { value: "travelerType", label: "Travel group" },
@@ -123,7 +124,7 @@ function SegmentExplorer({ audience, minBucketSize }: { audience: InsightAudienc
                   {wishlists.data.items.map((w, i) => (
                     <li key={w.wishlistId} className="flex items-center gap-3 py-2 text-sm">
                       <span className="w-6 text-ink-muted tabular-nums">{i + 1}</span>
-                      <a href={`/wishlists/${w.wishlistId}`} target="_blank" rel="noreferrer" className="flex-1 min-w-0 truncate text-ink hover:underline underline-offset-4">
+                      <a href={wishlistPath(w.wishlistId, w.wishlistName)} target="_blank" rel="noreferrer" className="flex-1 min-w-0 truncate text-ink hover:underline underline-offset-4">
                         {w.wishlistName}
                       </a>
                       <span className="text-xs text-ink-soft tabular-nums whitespace-nowrap">

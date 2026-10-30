@@ -5,8 +5,7 @@ import { Search, ArrowRight, ArrowUpRight } from "lucide-react";
 import { searchApi, wishlistsApi } from "../../../../dataStore/v2Api/client";
 import { usePersonalization } from "../../../../hooks/v2Hooks/usePersonalization";
 import { buttonClasses } from "../../ui";
-import { slugify } from "../../../../utils/v2Utils/slugify";
-import { ROUTES } from "../../../../utils/v2Utils/routes";
+import { ROUTES, wishlistPath } from "../../../../utils/v2Utils/routes";
 import type { WishlistCard } from "../../../../types";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
 
@@ -132,7 +131,7 @@ export default function HeroSection() {
           {/* Featured trip caption */}
           {feature && (
             <Link
-              to={`/wishlists/${feature.wishlistId}/${slugify(feature.wishlistName)}`}
+              to={wishlistPath(feature.wishlistId, feature.wishlistName)}
               className="glass group self-start md:self-end md:absolute md:top-24 md:right-10 rounded-full pl-5 pr-2 py-2 flex items-center gap-4 max-w-full"
             >
               <span className="min-w-0">

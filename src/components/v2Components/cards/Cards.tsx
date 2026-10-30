@@ -1,16 +1,20 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MapPin, Map } from "lucide-react";
 import { SaveButton } from "../ui";
 import { SponsoredTag } from "../partner/Partner";
 import type { WishlistCard, DestinationSummary } from "../../../types";
-import { slugify } from "../../../utils/v2Utils/slugify";
+import { destinationPath, wishlistPath } from "../../../utils/v2Utils/routes";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { eventsApi } from "../../../dataStore/v2Api/client";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 
 // Both cards use fixed-height slots (image ratio, clamped title, reserved
 // description lines, pinned footer) so a grid of them always lines up.
+// The title is a real link stretched over the whole card (so crawlers and
+// "open in new tab" work); the save button and badges sit above it.
+const STRETCHED_LINK =
+  "after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ink";
 
 // ─── Wishlist card ─────────────────────────────────────────────────────────────
 
@@ -25,27 +29,18 @@ interface WishlistCardProps {
 
 export function WishlistCardComponent({ wishlist, saved, onToggleSave, index = 0, source = "explore" }: WishlistCardProps) {
   const { formatPrice } = useCurrency();
-  const navigate = useNavigate();
   const colour = colourwayFor(wishlist.wishlistId);
-  const href = `/wishlists/${wishlist.wishlistId}/${slugify(wishlist.wishlistName)}`;
+  const href = wishlistPath(wishlist.wishlistId, wishlist.wishlistName);
   const meta = [`${wishlist.totalDays} days`, wishlist.peopleType].filter(Boolean).join(" · ");
 
-  const handleClick = () => {
-    eventsApi.track("wishlist_view", wishlist.wishlistId, wishlist.psychologicalVibeTags, source);
-    navigate(href);
-  };
+  const track = () => eventsApi.track("wishlist_view", wishlist.wishlistId, wishlist.psychologicalVibeTags, source);
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (index % 6) * 0.05, duration: 0.5 }}
-      className="group h-full bg-white rounded-2xl border border-line shadow-pop pop-hover overflow-hidden flex flex-col cursor-pointer"
-      onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) handleClick(); }}
-      tabIndex={0}
-      role="link"
-      aria-label={wishlist.wishlistName}
+      className="group relative h-full bg-white rounded-2xl border border-line shadow-pop pop-hover overflow-hidden flex flex-col"
     >
       <div className={`relative aspect-4/3 shrink-0 overflow-hidden ${colour.bg}`}>
         {wishlist.wishlistHeroImage ? (
@@ -60,10 +55,10 @@ export function WishlistCardComponent({ wishlist, saved, onToggleSave, index = 0
             <Map className="w-8 h-8 text-ink-muted" strokeWidth={1.25} />
           </div>
         )}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-10">
           <SaveButton saved={saved} onToggle={onToggleSave} size="sm" />
         </div>
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 z-10">
           {wishlist.partner ? (
             <SponsoredTag partner={wishlist.partner} />
           ) : wishlist.isFeatured ? (
@@ -80,7 +75,7 @@ export function WishlistCardComponent({ wishlist, saved, onToggleSave, index = 0
         </p>
 
         <h3 className="mt-2 font-display text-xl font-normal text-ink leading-snug line-clamp-2 min-h-[2lh]">
-          {wishlist.wishlistName}
+          <Link to={href} onClick={track} className={STRETCHED_LINK}>{wishlist.wishlistName}</Link>
         </h3>
 
         <p className="mt-2 text-sm text-ink-soft line-clamp-2 min-h-[2lh]">
@@ -113,25 +108,16 @@ const SAFETY_LABELS = ["", "Very safe", "Safe", "Moderate", "Use caution", "High
 
 export function DestinationCardComponent({ destination, saved, onToggleSave, index = 0, source = "explore" }: DestinationCardProps) {
   const { formatPrice } = useCurrency();
-  const navigate = useNavigate();
   const colour = colourwayFor(destination.destinationId);
-
-  const handleClick = () => {
-    eventsApi.track("destination_click", destination.destinationId, destination.tags, source);
-    navigate(`/destinations/${destination.destinationId}/${slugify(destination.destinationName)}`);
-  };
+  const href = destinationPath(destination.destinationId, destination.destinationName);
+  const track = () => eventsApi.track("destination_click", destination.destinationId, destination.tags, source);
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (index % 6) * 0.05, duration: 0.5 }}
-      className="group h-full bg-white rounded-2xl border border-line shadow-pop pop-hover overflow-hidden cursor-pointer flex flex-col"
-      onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) handleClick(); }}
-      tabIndex={0}
-      role="link"
-      aria-label={destination.destinationName}
+      className="group relative h-full bg-white rounded-2xl border border-line shadow-pop pop-hover overflow-hidden flex flex-col"
     >
       <div className={`relative aspect-4/3 shrink-0 overflow-hidden ${colour.bg}`}>
         {destination.thumbnailUrl ? (
@@ -146,15 +132,15 @@ export function DestinationCardComponent({ destination, saved, onToggleSave, ind
             <MapPin className="w-8 h-8 text-ink-muted" strokeWidth={1.25} />
           </div>
         )}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-10">
           <SaveButton saved={saved} onToggle={onToggleSave} size="sm" />
         </div>
         {destination.partner ? (
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10">
             <SponsoredTag partner={destination.partner} />
           </div>
         ) : destination.isFeatured ? (
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10">
             <span className="text-[10px] font-medium uppercase tracking-[0.15em] bg-white/70 backdrop-blur-md text-ink rounded-full px-2.5 py-1">
               Featured
             </span>
@@ -167,7 +153,7 @@ export function DestinationCardComponent({ destination, saved, onToggleSave, ind
           {destination.location}
         </p>
         <h3 className="mt-2 font-display text-xl font-normal text-ink leading-snug truncate">
-          {destination.destinationName}
+          <Link to={href} onClick={track} className={STRETCHED_LINK}>{destination.destinationName}</Link>
         </h3>
         <p className="mt-2 text-sm text-ink-soft truncate h-5">
           {[...destination.tags.slice(0, 2), ...destination.categories.slice(0, 1)].join(" · ")}

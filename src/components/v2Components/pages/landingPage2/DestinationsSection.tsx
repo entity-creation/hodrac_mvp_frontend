@@ -8,8 +8,7 @@ import { useAuth } from "../../../../hooks/v2Hooks/useAuth";
 import { SaveButton, Section, buttonClasses } from "../../ui";
 import { SponsoredTag } from "../../partner/Partner";
 import type { DestinationSummary } from "../../../../types";
-import { ROUTES } from "../../../../utils/v2Utils/routes";
-import { slugify } from "../../../../utils/v2Utils/slugify";
+import { destinationPath, ROUTES } from "../../../../utils/v2Utils/routes";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
 
 // The headline "Popular right now" block: one large feature plus four tiles,
@@ -87,7 +86,7 @@ function PopularTile({
   onToggleSave: () => void;
 }) {
   const { formatPrice } = useCurrency();
-  const href = `/destinations/${d.destinationId}/${slugify(d.destinationName)}`;
+  const href = destinationPath(d.destinationId, d.destinationName);
 
   return (
     <motion.div

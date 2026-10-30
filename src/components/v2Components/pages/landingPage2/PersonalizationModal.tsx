@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Modal, Button, Skeleton } from "../../ui";
 import { wishlistsApi } from "../../../../dataStore/v2Api/client";
-import { slugify } from "../../../../utils/v2Utils/slugify";
+import { wishlistPath } from "../../../../utils/v2Utils/routes";
 import type { PersonalizationData } from "../../../../hooks/v2Hooks/usePersonalization";
 import type { WishlistCard } from "../../../../types";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
@@ -236,7 +236,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete }: Pe
                 matches.map(w => (
                   <button
                     key={w.wishlistId}
-                    onClick={() => goTo(`/wishlists/${w.wishlistId}/${slugify(w.wishlistName)}`)}
+                    onClick={() => goTo(wishlistPath(w.wishlistId, w.wishlistName))}
                     className="flex items-center gap-4 p-3 bg-white border border-line rounded-2xl text-left pop-hover shadow-pop-sm"
                   >
                     <span className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-brand-100 flex items-center justify-center text-2xl">

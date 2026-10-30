@@ -1,3 +1,5 @@
+import { slugify } from "./slugify";
+
 export const ROUTES = {
     PUBLIC: {
         HOME: "/",
@@ -26,6 +28,17 @@ export const ROUTES = {
 } as const;
 
 // Deep links used across the app.
+// Canonical detail URLs: always include the slug so each item has one URL.
+export const wishlistPath = (id: string, name?: string | null) => {
+    const slug = name ? slugify(name) : "";
+    return slug ? `/wishlists/${id}/${slug}` : `/wishlists/${id}`;
+};
+
+export const destinationPath = (id: string, name?: string | null) => {
+    const slug = name ? slugify(name) : "";
+    return slug ? `/destinations/${id}/${slug}` : `/destinations/${id}`;
+};
+
 export const tripsForPlacePath = (place: { destinationId?: string; wishlistId?: string; name?: string }) => {
     const q = new URLSearchParams();
     if (place.destinationId) q.set("destinationId", place.destinationId);

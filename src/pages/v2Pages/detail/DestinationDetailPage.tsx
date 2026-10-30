@@ -13,7 +13,9 @@ import { WishlistCardComponent } from "../../../components/v2Components/cards/Ca
 import { PartnerBadge, PartnerBookingButton } from "../../../components/v2Components/partner/Partner";
 import TripsForPlace from "../../../components/v2Components/tripPost/TripsForPlace";
 import { wishlistsApi } from "../../../dataStore/v2Api/client";
-import { createTripForPlacePath } from "../../../utils/v2Utils/routes";
+import { createTripForPlacePath, destinationPath } from "../../../utils/v2Utils/routes";
+import { metaDescription, useCanonicalRedirect, usePageMeta } from "../../../utils/v2Utils/seo";
+import { destinationFallbackDescription } from "../../../utils/v2Utils/pageMeta";
 import type { WishlistCard } from "../../../types";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 import ShareButton from "../../../components/v2Components/share/ShareButton";
@@ -134,6 +136,18 @@ export default function DestinationDetailPage() {
       .finally(() => { if (!cancelled) setRelatedLoading(false); });
     return () => { cancelled = true; };
   }, [id]);
+
+  const current = dest?.destinationId === id ? dest : null;
+  const canonicalPath = current ? destinationPath(current.destinationId, current.destinationName) : undefined;
+  usePageMeta({
+    title: current?.destinationName ?? (error ? "Destination not found" : "Destination"),
+    description: metaDescription(current?.description?.overview)
+      ?? (current ? destinationFallbackDescription(current.destinationName, current.location) : undefined),
+    path: canonicalPath,
+    image: current?.thumbnailUrl,
+    noindex: !!error && !current,
+  });
+  useCanonicalRedirect(canonicalPath);
 
   // Skeleton only on first load; auth/token refetches update in place.
   if (loading && dest?.destinationId !== id) return <DestinationDetailSkeleton />;

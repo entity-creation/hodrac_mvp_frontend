@@ -12,6 +12,8 @@ const AdminApp = lazy(() => import("../admin/AdminApp"));
 import AppNavBar from "../components/v2Components/layout/AppNavBar";
 import Footer from "../components/v2Components/pages/landingPage2/Footer";
 import RequireAuth from "../components/v2Components/auth/RequireAuth";
+import PageMeta from "../components/v2Components/seo/PageMeta";
+import { STATIC_PAGE_META } from "../utils/v2Utils/pageMeta";
 import { ButtonLink, FullPageSpinner } from "../components/v2Components/ui";
 
 // Landing
@@ -95,7 +97,7 @@ export default function App() {
       <PersonalizationProvider>
         <Routes>
           {/* Admin has its own layout (no site navbar/footer) */}
-          <Route element={<RequireAuth />}>
+          <Route element={<><PageMeta title="Admin" noindex /><RequireAuth /></>}>
             <Route
               path="/admin/*"
               element={
@@ -107,17 +109,17 @@ export default function App() {
           </Route>
 
           <Route element={<AppLayout />}>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<><PageMeta {...STATIC_PAGE_META["/"]} /><LandingPage /></>} />
 
             {/* Explore — public */}
-            <Route path="/explore/wishlists"    element={<ExploreWishlistsPage />} />
-            <Route path="/explore/destinations" element={<ExploreDestinationsPage />} />
-            <Route path="/search"               element={<SearchResultsPage />} />
-            <Route path="/browse-trip"          element={<BrowseTripPage />} />
+            <Route path="/explore/wishlists"    element={<><PageMeta {...STATIC_PAGE_META["/explore/wishlists"]} /><ExploreWishlistsPage /></>} />
+            <Route path="/explore/destinations" element={<><PageMeta {...STATIC_PAGE_META["/explore/destinations"]} /><ExploreDestinationsPage /></>} />
+            <Route path="/search"               element={<><PageMeta title="Search" noindex /><SearchResultsPage /></>} />
+            <Route path="/browse-trip"          element={<><PageMeta {...STATIC_PAGE_META["/browse-trip"]} /><BrowseTripPage /></>} />
 
             {/* Shareable pages (no login). Paths match the backend's share redirects. */}
-            <Route path="/trips/:id"               element={<TripPage />} />
-            <Route path="/shared/wishlists/:token" element={<SharedWishlistPage />} />
+            <Route path="/trips/:id"               element={<><PageMeta title="Trip" noindex /><TripPage /></>} />
+            <Route path="/shared/wishlists/:token" element={<><PageMeta title="Shared wishlist" noindex /><SharedWishlistPage /></>} />
 
             {/* Detail — public */}
             <Route path="/wishlists/:id/:slug"    element={<WishlistDetailPage />} />
@@ -126,7 +128,7 @@ export default function App() {
             <Route path="/destinations/:id"       element={<DestinationDetailPage />} />
 
             {/* Signed-in only — logged-out visitors are sent to login and back */}
-            <Route element={<RequireAuth />}>
+            <Route element={<><PageMeta title="My Hodrac" noindex /><RequireAuth /></>}>
               <Route path="/saved"                        element={<SavedPage />} />
               <Route path="/my-wishlists"                 element={<MyWishlistsPage />} />
               <Route path="/my-wishlists/:id/edit"        element={<EditWishlistPage />} />
@@ -138,22 +140,22 @@ export default function App() {
             </Route>
 
             {/* Auth */}
-            <Route path="/auth/login"    element={<LoginPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
-            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/login"    element={<><PageMeta title="Log in" noindex /><LoginPage /></>} />
+            <Route path="/auth/register" element={<><PageMeta title="Sign up" noindex /><RegisterPage /></>} />
+            <Route path="/auth/forgot-password" element={<><PageMeta title="Forgot password" noindex /><ForgotPasswordPage /></>} />
             {/* Paths match the links in the backend's emails */}
-            <Route path="/reset-password"       element={<ResetPasswordPage />} />
-            <Route path="/confirm-email"        element={<ConfirmEmailPage />} />
-            <Route path="/auth/reset-password"  element={<ResetPasswordPage />} />
+            <Route path="/reset-password"       element={<><PageMeta title="Reset password" noindex /><ResetPasswordPage /></>} />
+            <Route path="/confirm-email"        element={<><PageMeta title="Confirm email" noindex /><ConfirmEmailPage /></>} />
+            <Route path="/auth/reset-password"  element={<><PageMeta title="Reset password" noindex /><ResetPasswordPage /></>} />
 
             {/* Business & info */}
-            <Route path="/partners"   element={<PartnersPage />} />
-            <Route path="/contact-us" element={<ContactUsPage />} />
-            <Route path="/about"      element={<AboutPage />} />
-            <Route path="/terms"      element={<TermsPage />} />
-            <Route path="/privacy"    element={<PrivacyPage />} />
+            <Route path="/partners"   element={<><PageMeta {...STATIC_PAGE_META["/partners"]} /><PartnersPage /></>} />
+            <Route path="/contact-us" element={<><PageMeta {...STATIC_PAGE_META["/contact-us"]} /><ContactUsPage /></>} />
+            <Route path="/about"      element={<><PageMeta {...STATIC_PAGE_META["/about"]} /><AboutPage /></>} />
+            <Route path="/terms"      element={<><PageMeta {...STATIC_PAGE_META["/terms"]} /><TermsPage /></>} />
+            <Route path="/privacy"    element={<><PageMeta {...STATIC_PAGE_META["/privacy"]} /><PrivacyPage /></>} />
 
-            <Route path="*" element={<NotFoundPage />} />
+            <Route path="*" element={<><PageMeta title="Page not found" noindex /><NotFoundPage /></>} />
           </Route>
         </Routes>
       </PersonalizationProvider>

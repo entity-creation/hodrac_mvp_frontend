@@ -18,6 +18,8 @@ import { useWishlistSignalR } from "../../../hooks/v2Hooks/useSignalR";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 import ShareButton from "../../../components/v2Components/share/ShareButton";
+import { wishlistPath } from "../../../utils/v2Utils/routes";
+import { metaDescription, useCanonicalRedirect, usePageMeta } from "../../../utils/v2Utils/seo";
 
 const PLATFORM_ICONS: Record<string, string> = {
   YouTube: "▶",
@@ -205,6 +207,17 @@ export default function WishlistDetailPage() {
 
   const [activeTab, setActiveTab] = useState<"itinerary" | "inclusions" | "info">("itinerary");
   const [travelers, setTravelers] = useState(2);
+
+  const current = wishlist?.wishlistId === id ? wishlist : null;
+  const canonicalPath = current ? wishlistPath(current.wishlistId, current.wishlistName) : undefined;
+  usePageMeta({
+    title: current?.wishlistName ?? (error ? "Wishlist not found" : "Wishlist"),
+    description: metaDescription(current?.wishlistDescription),
+    path: canonicalPath,
+    image: current?.wishlistHeroImage,
+    noindex: !!error && !current,
+  });
+  useCanonicalRedirect(canonicalPath);
 
   // Skeleton only on first load; auth/token refetches update in place.
   if (loading && wishlist?.wishlistId !== id) return <WishlistDetailSkeleton />;

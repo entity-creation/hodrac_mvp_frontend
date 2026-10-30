@@ -9,7 +9,7 @@ import ShareButton from "../../../components/v2Components/share/ShareButton";
 import { tripCapacity } from "../../../utils/v2Utils/trips";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
-import { ROUTES } from "../../../utils/v2Utils/routes";
+import { destinationPath, ROUTES } from "../../../utils/v2Utils/routes";
 import type { TripPost, TripInterestStatus } from "../../../types";
 
 // /trips/:id — the shareable trip page. Works without login (public endpoint:
@@ -134,7 +134,7 @@ export default function TripPage() {
               <p className="text-[11px] uppercase tracking-[0.25em] text-ink-muted mb-3">Stops</p>
               <div className="flex flex-wrap gap-2">
                 {trip.stops.map(s => (
-                  <Link key={s.destinationId} to={`/destinations/${s.destinationId}`}
+                  <Link key={s.destinationId} to={destinationPath(s.destinationId, s.name)}
                     className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm text-ink hover:border-ink transition-colors">
                     <MapPin className="w-3.5 h-3.5 text-ink-muted" /> {s.name}
                   </Link>
