@@ -5,10 +5,10 @@ import {
   adminApi, enumName, totalPages, DESTINATION_SORTS, IMAGE_TYPES,
   type AdminCategory, type AdminCountry, type AdminDestinationDetail, type AdminDestinationImage,
   type AdminDestinationListItem, type AdminTag, type DescriptionJson, type DestinationImageInput,
-  type DestinationInput,
+  type DestinationInput, type DestinationOptions, type NonStandardValue,
 } from "../api";
 import {
-  AdminPage, Btn, Check, ConfirmBtn, DataTable, Drawer, ErrorBlock, Field, ListInput, LoadingBlock, NumberInput, Pager, Pill, SearchBox, Select, TextArea, TextInput, Toolbar, type Column,
+  AdminPage, Btn, Check, ConfirmBtn, DataTable, Drawer, ErrorBlock, Field, ListInput, LoadingBlock, NumberInput, Pager, Panel, Pill, SearchBox, Select, TextArea, TextInput, Toolbar, type Column,
 } from "../ui";
 import { useAction, useDebounced, useQuery } from "../hooks";
 import { fmtDateTime, fmtNumber, fmtUsd } from "../format";
@@ -206,7 +206,18 @@ function toInput(f: DestForm): DestinationInput {
   };
 }
 
-interface Lookups { countries: AdminCountry[]; tags: AdminTag[]; categories: AdminCategory[] }
+interface Lookups { countries: AdminCountry[]; tags: AdminTag[]; categories: AdminCategory[]; options: DestinationOptions | null }
+
+// Scores the backend accepts from 1 to 5.
+const SCORE_MIN = 1;
+const SCORE_MAX = 5;
+const SCORE_FIELDS = [
+  { key: "luxuryRating", label: "Luxury rating", hint: undefined },
+  { key: "safetyLevel", label: "Safety level", hint: "1 = safest" },
+  { key: "familyFriendlyScore", label: "Family friendly", hint: undefined },
+  { key: "adventurePaceScore", label: "Adventure pace", hint: undefined },
+  { key: "aestheticTrendScore", label: "Aesthetic trend", hint: undefined },
+] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -238,10 +249,12 @@ export default function DestinationsPage() {
   const countries = useQuery(() => adminApi.countries.list(), []);
   const tags = useQuery(() => adminApi.tags.list(), []);
   const categories = useQuery(() => adminApi.categories.list(), []);
+  const options = useQuery(() => adminApi.destinationOptions(), []);
   const lookups: Lookups = {
     countries: countries.data ?? [],
     tags: tags.data ?? [],
     categories: categories.data ?? [],
+    options: options.data,
   };
 
   const list = useQuery(
@@ -283,6 +296,8 @@ export default function DestinationsPage() {
       description="Places travellers can discover, save and plan trips around."
       actions={<Btn variant="primary" onClick={() => setEditing({ id: null })}><Plus className="w-4 h-4" /> New destination</Btn>}
     >
+      {options.data && <NonStandardNotice options={options.data} />}
+
       <Toolbar>
         <SearchBox value={searchDraft} onChange={setSearchDraft} placeholder="Search destinations" />
         <Select label="Country" value={countryId || ALL} onChange={v => setParam({ country: v === ALL ? "" : v })}
@@ -431,6 +446,62 @@ function FeaturingPanel({ destination, onChanged }: { destination: AdminDestinat
   );
 }
 
+// Dropdown limited to the allowed values. A stored value outside the list is
+// kept as an extra option (marked) so opening and saving doesn't change it.
+function OptionSelect({ label, value, onChange, options, loading }: {
+  label: string; value: string; onChange: (v: string) => void;
+  options: { value: string; label: string }[]; loading?: boolean;
+}) {
+  const unknown = !!value && !loading && !options.some(o => o.value === value);
+  return (
+    <>
+      <select value={value} onChange={e => onChange(e.target.value)} aria-label={label} disabled={loading}
+        className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink disabled:opacity-60">
+        <option value="">{loading ? "Loading…" : "Not set"}</option>
+        {unknown && <option value={value}>{value} (not in the allowed list)</option>}
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {unknown && <p className="text-[11px] text-amber-700 mt-1">This value isn't in the allowed list. Pick one from the list to fix it.</p>}
+    </>
+  );
+}
+
+// Stored time zones / accessibility types outside the allowed lists, and how
+// many destinations have none. Hidden when there's nothing to clean up.
+function NonStandardNotice({ options }: { options: DestinationOptions }) {
+  const ns = options.nonStandard;
+  if (!ns) return null;
+  const tz = ns.timeZones ?? [];
+  const acc = ns.accessibilityTypes ?? [];
+  if (!tz.length && !acc.length && !ns.missingTimeZone && !ns.missingAccessibility) return null;
+
+  const list = (title: string, items: NonStandardValue[]) => items.length > 0 && (
+    <div>
+      <p className="text-xs font-medium text-ink-soft mb-1">{title}</p>
+      <div className="flex flex-wrap gap-1">
+        {items.map(i => <Pill key={i.value} tone="warn">{i.value} · {fmtNumber(i.count)}</Pill>)}
+      </div>
+    </div>
+  );
+
+  return (
+    <Panel title="Destination values to clean up" className="mb-6">
+      <div className="space-y-3 text-sm">
+        <p className="text-ink-soft">
+          These stored values aren't in the allowed lists. Open the destinations that use them and pick a value from the dropdown.
+        </p>
+        {list("Time zones not in the list", tz)}
+        {list("Accessibility types not in the list", acc)}
+        {(ns.missingTimeZone > 0 || ns.missingAccessibility > 0) && (
+          <p className="text-ink-muted">
+            Left blank: {fmtNumber(ns.missingTimeZone)} without a time zone, {fmtNumber(ns.missingAccessibility)} without an accessibility type.
+          </p>
+        )}
+      </div>
+    </Panel>
+  );
+}
+
 function DestinationForm({ initial, lookups, onCreated, onChanged, onDeleted }: {
   initial: AdminDestinationDetail | null; lookups: Lookups;
   onCreated: (id: string) => void; onChanged: () => void; onDeleted: () => void;
@@ -466,6 +537,10 @@ function DestinationForm({ initial, lookups, onCreated, onChanged, onDeleted }: 
     const e: Record<string, string> = {};
     if (!form.destinationName.trim()) e.destinationName = "Name is required.";
     if (!form.countryId) e.countryId = "Pick a country.";
+    for (const { key, label } of SCORE_FIELDS) {
+      const v = form[key];
+      if (v != null && (v < SCORE_MIN || v > SCORE_MAX)) e[key] = `${label} must be between ${SCORE_MIN} and ${SCORE_MAX}.`;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -524,8 +599,10 @@ function DestinationForm({ initial, lookups, onCreated, onChanged, onDeleted }: 
             </select>
             <FieldError message={errors.countryId} />
           </Field>
-          <Field label="Time zone" hint="IANA name, e.g. Europe/Rome">
-            <TextInput value={form.timeZone} onChange={e => set("timeZone", e.target.value)} />
+          <Field label="Time zone">
+            <OptionSelect label="Time zone" value={form.timeZone} onChange={v => set("timeZone", v)}
+              loading={!lookups.options}
+              options={(lookups.options?.timeZones ?? []).map(t => ({ value: t.id, label: t.label }))} />
           </Field>
           <div className="sm:col-span-2">
             <p className="text-xs font-medium text-ink-soft mb-1">Cities</p>
@@ -543,7 +620,9 @@ function DestinationForm({ initial, lookups, onCreated, onChanged, onDeleted }: 
             <NumberInput step="any" value={form.longitude} onChange={v => set("longitude", v)} />
           </Field>
           <Field label="Accessibility type" className="sm:col-span-2">
-            <TextInput value={form.accessibilityType} onChange={e => set("accessibilityType", e.target.value)} />
+            <OptionSelect label="Accessibility type" value={form.accessibilityType} onChange={v => set("accessibilityType", v)}
+              loading={!lookups.options}
+              options={(lookups.options?.accessibilityTypes ?? []).map(a => ({ value: a, label: a }))} />
           </Field>
         </div>
         {base && (base.languages.length > 0 || base.currencies.length > 0) && (
@@ -562,14 +641,15 @@ function DestinationForm({ initial, lookups, onCreated, onChanged, onDeleted }: 
       </section>
 
       <section>
-        <SectionTitle hint="Safety: 1 is the safest.">Scores</SectionTitle>
+        <SectionTitle hint={`Scores go from ${SCORE_MIN} to ${SCORE_MAX}. Safety: 1 is the safest.`}>Scores</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Field label="Avg. cost per day (USD)"><NumberInput min={0} value={form.averageCostPerDay} onChange={v => set("averageCostPerDay", v)} /></Field>
-          <Field label="Luxury rating"><NumberInput value={form.luxuryRating} onChange={v => set("luxuryRating", v)} /></Field>
-          <Field label="Safety level" hint="1 = safest"><NumberInput min={1} value={form.safetyLevel} onChange={v => set("safetyLevel", v)} /></Field>
-          <Field label="Family friendly"><NumberInput value={form.familyFriendlyScore} onChange={v => set("familyFriendlyScore", v)} /></Field>
-          <Field label="Adventure pace"><NumberInput value={form.adventurePaceScore} onChange={v => set("adventurePaceScore", v)} /></Field>
-          <Field label="Aesthetic trend"><NumberInput value={form.aestheticTrendScore} onChange={v => set("aestheticTrendScore", v)} /></Field>
+          {SCORE_FIELDS.map(f => (
+            <Field key={f.key} label={f.label} hint={f.hint}>
+              <NumberInput min={SCORE_MIN} max={SCORE_MAX} step={1} value={form[f.key]} onChange={v => set(f.key, v)} />
+              <FieldError message={errors[f.key]} />
+            </Field>
+          ))}
         </div>
       </section>
 

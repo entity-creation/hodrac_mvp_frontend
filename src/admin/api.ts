@@ -411,6 +411,26 @@ export interface FeaturedPoolInput {
   resetImpressionsToday?: boolean;
 }
 
+// Allowed values for a destination's time zone and accessibility type.
+// Save the time zone's `id` and the accessibility label exactly as listed.
+// utcOffset is null when the server doesn't recognise the zone (label then has no offset prefix).
+export interface DestinationTimeZone { id: string; label: string; utcOffset: string | null }
+// A stored value outside the allowed list and how many destinations use it.
+export interface NonStandardValue { value: string; count: number }
+export interface DestinationOptions {
+  accessibilityTypes: string[];
+  // Sorted by UTC offset.
+  timeZones: DestinationTimeZone[];
+  // Stored values outside the allowed lists, most used first; [] when clean.
+  // missing* = destinations with the field left blank.
+  nonStandard: {
+    accessibilityTypes: NonStandardValue[];
+    timeZones: NonStandardValue[];
+    missingAccessibility: number;
+    missingTimeZone: number;
+  };
+}
+
 // The admin-chosen landing hero (one at a time; 204 = none set).
 export interface AdminHero {
   wishlistId: string;
@@ -808,6 +828,8 @@ export const adminApi = {
     exportCsv: () => downloadFile(`${A}/newsletter/export`, "newsletter-subscribers.csv"),
     remove: (id: string) => http.del<void>(`${A}/newsletter/${id}`),
   },
+
+  destinationOptions: () => http.get<DestinationOptions>(`${A}/destination-options`),
 
   destinations: {
     list: (p: Paging & { search?: string; countryId?: string; cityId?: string; tag?: string; category?: string; sort?: string }) =>
