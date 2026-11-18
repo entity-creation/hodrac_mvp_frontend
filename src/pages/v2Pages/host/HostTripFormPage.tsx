@@ -4,7 +4,7 @@ import { Globe2, Lock, LockKeyhole, Map, MapPin, PenLine, Plus, Send, Trash2 } f
 import { tripClient } from "../../../dataStore/v2Api/client";
 import { hostApi, hostedTripApi, paymentsApi } from "../../../dataStore/v2Api/hostApi";
 import { Button, FullPageSpinner } from "../../../components/v2Components/ui";
-import { FormError, HostField } from "../../../components/v2Components/host/HostUi";
+import { FormError, HostClosedBanner, HostField } from "../../../components/v2Components/host/HostUi";
 import { inputClass } from "../../../components/v2Components/host/hostStyles";
 import { fieldErrors, formatNaira, formErrorText, splitEvenly, trackHost } from "../../../utils/v2Utils/host";
 import { TERMS_TEMPLATES, parseNaira, toInstalments, validateSchedule, type ScheduleRow } from "../../../utils/v2Utils/hostSchedule";
@@ -22,7 +22,7 @@ interface Loaded {
   profile: HostProfile;
   trip: TripPost | null;     // null when creating
   termsText: string;
-  moneyLocked: boolean;      // someone has paid through Hodrac
+  moneyLocked: boolean;      // someone has paid through Hodrac, or the host account is closed
 }
 
 // /host/trips/new and /host/trips/:id/edit (also turns a community trip of
@@ -46,7 +46,7 @@ export default function HostTripFormPage() {
         hosted ? hostApi.trips().catch(() => []) : Promise.resolve([]),
       ]);
       const summary = summaries.find(s => s.id === id);
-      if (!cancelled) setLoaded({ profile, trip, termsText: terms?.termsText ?? "", moneyLocked: (summary?.collectedKobo ?? 0) > 0 });
+      if (!cancelled) setLoaded({ profile, trip, termsText: terms?.termsText ?? "", moneyLocked: !!profile.closedAt || (summary?.collectedKobo ?? 0) > 0 });
     })().catch(e => { if (!cancelled) setLoadError(formErrorText(e, { 404: "This trip doesn't exist or isn't yours." }, "Couldn't load this trip.")); });
     return () => { cancelled = true; };
   }, [id]);
@@ -54,6 +54,16 @@ export default function HostTripFormPage() {
   if (noProfile) return <Navigate to={ROUTES.HOST.ONBOARDING} replace />;
   if (loadError) return <div className="max-w-xl mx-auto px-5 py-16"><FormError message={loadError} /></div>;
   if (!loaded) return <FullPageSpinner />;
+  // Closed hosts can't create hosted trips (or turn a community trip into one).
+  if (loaded.profile.closedAt && (!loaded.trip || loaded.trip.tripType === "community")) {
+    return (
+      <div className="max-w-2xl mx-auto px-5 md:px-8 pt-10 pb-24 space-y-6">
+        <h1 className="text-4xl font-light text-ink">Create a hosted trip</h1>
+        <HostClosedBanner profile={loaded.profile} />
+        <Link to={ROUTES.HOST.TRIPS} className="inline-block text-ink underline underline-offset-4">Go to your trips</Link>
+      </div>
+    );
+  }
   return <HostTripForm {...loaded} />;
 }
 
@@ -138,7 +148,7 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
       setFormError("Please check the highlighted fields.");
       return;
     }
-    if (!profile.payoutAccountSet) return;
+    if (!profile.payoutAccountSet && !profile.closedAt) return;
 
     const money = moneyLocked ? {} : { pricePerSeatKobo: priceKobo, depositKobo, instalments, feeMode };
     const common = {
@@ -194,10 +204,11 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
         {editing && <p className="text-ink-soft mt-2">{trip.destinationLabel}</p>}
       </header>
 
-      {!profile.payoutAccountSet && (
+      <HostClosedBanner profile={profile} />
+      {!profile.closedAt && !profile.payoutAccountSet && (
         <FormError message="Add a payout account before you publish, so travellers' payments have somewhere to go." />
       )}
-      {profile.payoutAccountSet && profile.verificationStatus !== "Verified" && (
+      {!profile.closedAt && profile.payoutAccountSet && profile.verificationStatus !== "Verified" && (
         <p className="rounded-2xl bg-sun-100 border border-sun-300 text-ink px-4 py-3 text-sm">
           You can publish and share this trip now. Payments open once you're verified.
         </p>
@@ -239,7 +250,9 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
         {moneyLocked && (
           <p className="text-sm text-ink-soft flex items-start gap-2" title="Travellers have paid against this schedule">
             <LockKeyhole className="w-4 h-4 mt-0.5 shrink-0" />
-            Price, deposit, instalments and fee mode can't change once a traveller has paid.
+            {profile.closedAt
+              ? "Price, deposit, instalments and fee mode can't change while your host account is closed."
+              : "Price, deposit, instalments and fee mode can't change once a traveller has paid."}
           </p>
         )}
         <div className="grid sm:grid-cols-2 gap-4">
@@ -381,7 +394,7 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
 
       <div className="space-y-3">
         <FormError message={formError} />
-        {!profile.payoutAccountSet ? (
+        {!profile.payoutAccountSet && !profile.closedAt ? (
           <Link to={ROUTES.HOST.ONBOARDING} className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-ink text-white font-medium">
             Add a payout account first
           </Link>

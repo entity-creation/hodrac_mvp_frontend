@@ -74,6 +74,10 @@ export interface HostProfile {
   operatorPlanExpiresAt: string | null;
   isFoundingHost: boolean;
   foundingFreeDepartureUsed: boolean;
+  // Set when Hodrac closed the account: setup, verification, new trips and
+  // money-field edits are blocked (403); the manifest and manual payments still work.
+  closedAt: string | null;
+  closedReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

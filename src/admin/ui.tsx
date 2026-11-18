@@ -144,20 +144,30 @@ export function Btn({ variant = "outline", size = "md", loading, disabled, child
 }
 
 // Two-step destructive action: first click asks, second confirms.
-export function ConfirmBtn({ label, confirmLabel = "Confirm", onConfirm, loading, size = "md", variant = "danger" }: {
-  label: ReactNode; confirmLabel?: string; onConfirm: () => void; loading?: boolean; size?: "sm" | "md"; variant?: Variant;
+// `message` explains the consequences while asking (and keeps the question
+// open until answered instead of 5 seconds).
+export function ConfirmBtn({ label, confirmLabel = "Confirm", onConfirm, loading, size = "md", variant = "danger", message }: {
+  label: ReactNode; confirmLabel?: string; onConfirm: () => void; loading?: boolean; size?: "sm" | "md"; variant?: Variant; message?: ReactNode;
 }) {
   const [asking, setAsking] = useState(false);
   useEffect(() => {
-    if (!asking) return;
+    if (!asking || message) return;
     const t = setTimeout(() => setAsking(false), 5000);
     return () => clearTimeout(t);
-  }, [asking]);
-  return asking ? (
+  }, [asking, message]);
+  const buttons = (
     <span className="inline-flex items-center gap-1">
       <Btn size={size} variant="danger" loading={loading} onClick={() => { onConfirm(); setAsking(false); }}>{confirmLabel}</Btn>
       <Btn size={size} variant="ghost" onClick={() => setAsking(false)}>Cancel</Btn>
     </span>
+  );
+  return asking ? (
+    message ? (
+      <span className="block space-y-2 rounded-xl border border-red-200 bg-red-50/60 p-3">
+        <span className="block text-sm text-ink">{message}</span>
+        {buttons}
+      </span>
+    ) : buttons
   ) : (
     <Btn size={size} variant={variant === "danger" ? "outline" : variant} className={variant === "danger" ? "text-red-700!" : ""} onClick={() => setAsking(true)}>
       {label}

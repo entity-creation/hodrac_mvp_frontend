@@ -37,6 +37,8 @@ export interface AdminHostSummary {
   isFoundingHost: boolean;
   plan: HostPlan;
   operatorPlanExpiresAt: string | null;
+  closedAt: string | null;   // null = open
+  closedReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,8 +66,15 @@ export interface AdminHostDetail {
   paystackSubaccountCode: string | null;
   payoutAccountName: string | null;
   foundingFreeDepartureTripId: string | null;
+  closedByUserId: string | null;
   operatorPlanPayments: AdminOperatorPlanPayment[];
 }
+
+// subaccount*: true = done, false = Paystack call failed (closing again retries), null = no payout account.
+export interface AdminCloseHostResult { host: AdminHostDetail; subaccountDeactivated: boolean | null; hiddenTripIds: string[] }
+export interface AdminReopenHostResult { host: AdminHostDetail; subaccountReactivated: boolean | null; unhiddenTripIds: string[] }
+// 409 body from DELETE /hosts/{id} when the host has trips or payments.
+export interface AdminDeleteHostConflict { detail?: string; hostedTrips?: number; seatPayments?: number; operatorPlanPayments?: number }
 
 export interface AdminHostDocument {
   id: string;
@@ -156,7 +165,7 @@ export type PaymentsQuery = {
 
 export const hostingApi = {
   hosts: {
-    list: (p: { page?: number; pageSize?: number; status?: string; search?: string }) =>
+    list: (p: { page?: number; pageSize?: number; status?: string; closed?: boolean; search?: string }) =>
       http.get<AdminPaged<AdminHostSummary>>(`${A}/hosts${qs(p)}`),
     get: (id: string) => http.get<AdminHostDetail>(`${A}/hosts/${id}`),
     documents: (id: string) => http.get<AdminHostDocument[]>(`${A}/hosts/${id}/documents`),
@@ -166,6 +175,11 @@ export const hostingApi = {
     reject: (id: string, reason: string) => http.post<AdminHostDetail>(`${A}/hosts/${id}/reject`, { reason }),
     revoke: (id: string, reason?: string) => http.post<AdminHostDetail>(`${A}/hosts/${id}/revoke`, { reason: reason || null }),
     markFounding: (id: string) => http.post<AdminHostDetail>(`${A}/hosts/${id}/founding`, {}),
+    removeFounding: (id: string) => http.del<AdminHostDetail>(`${A}/hosts/${id}/founding`),
+    close: (id: string, reason?: string) => http.post<AdminCloseHostResult>(`${A}/hosts/${id}/close`, reason ? { reason } : {}),
+    reopen: (id: string) => http.post<AdminReopenHostResult>(`${A}/hosts/${id}/reopen`, {}),
+    // 204 on success; 409 (AdminDeleteHostConflict) when it has trips or payments.
+    remove: (id: string) => http.del<void>(`${A}/hosts/${id}`),
     recordOperatorPlan: (id: string, body: OperatorPlanInput) =>
       http.post<AdminHostDetail>(`${A}/hosts/${id}/operator-plan`, body),
   },

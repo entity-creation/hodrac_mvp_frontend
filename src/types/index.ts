@@ -485,6 +485,9 @@ export type NotificationType =
   | "HostVerified"
   | "HostRejected"
   | "HostVerificationRevoked"
+  | "HostFoundingRemoved"
+  | "HostClosed"
+  | "HostReopened"
   | "HostedSeatWithdrawn" // to the host
   | "PaymentReceived"     // to the host
   | "PaymentConfirmed"    // to the traveller

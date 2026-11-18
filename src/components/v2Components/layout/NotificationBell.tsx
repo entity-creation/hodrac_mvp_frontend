@@ -17,6 +17,9 @@ const NOTIFICATION_COPY: Record<NotificationType, { icon: string; text: string }
   HostVerified: { icon: "✅", text: "You're a verified host" },
   HostRejected: { icon: "📝", text: "Your host verification needs another look" },
   HostVerificationRevoked: { icon: "⚠️", text: "Your Verified host badge was removed" },
+  HostFoundingRemoved: { icon: "🏷️", text: "Your founding host status was removed" },
+  HostClosed: { icon: "⛔", text: "Your host account was closed by Hodrac" },
+  HostReopened: { icon: "🔓", text: "Your host account was reopened. Hodrac will verify it again before travellers can pay" },
   HostedSeatWithdrawn: { icon: "🚪", text: "A traveller left your trip" },
   PaymentReceived: { icon: "💸", text: "A traveller paid for your trip" },
   PaymentConfirmed: { icon: "🧾", text: "Your payment is confirmed" },
@@ -33,6 +36,9 @@ function notificationPath(n: TripNotification): string {
     case "HostVerified":
     case "HostRejected":
     case "HostVerificationRevoked":
+    case "HostFoundingRemoved":
+    case "HostClosed":
+    case "HostReopened":
       return ROUTES.HOST.HOME;
     case "PaymentReceived":
     case "HostedSeatWithdrawn":

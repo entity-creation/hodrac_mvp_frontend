@@ -1,6 +1,22 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BadgeCheck, Clock } from "lucide-react";
-import type { InterestPaymentStatus } from "../../../types/host";
+import type { HostProfile, InterestPaymentStatus } from "../../../types/host";
+
+// Shown to a host whose account Hodrac closed. They can still see their trips
+// and manifests and record payments, to settle with travellers who've paid.
+export function HostClosedBanner({ profile }: { profile: HostProfile }) {
+  if (!profile.closedAt) return null;
+  return (
+    <div role="status" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-ink space-y-1">
+      <p className="font-medium text-red-700">Your host account was closed by Hodrac. Contact support.</p>
+      {profile.closedReason && <p>Reason: {profile.closedReason}</p>}
+      <p className="text-ink-soft">
+        You can still view your trips and manifests, download them, record payments and refunds, and send WhatsApp reminders,
+        so you can settle with travellers who've paid.
+      </p>
+    </div>
+  );
+}
 
 // "Verified host" badge (Palm). Tooltip explains what was checked.
 export function VerifiedBadge({ size = "sm" }: { size?: "sm" | "md" }) {

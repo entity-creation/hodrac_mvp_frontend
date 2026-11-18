@@ -4,7 +4,7 @@ import { Check, FileUp, Landmark, Plus, Send, ShieldCheck, Trash2, UserRound } f
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { clearHostProfileCache } from "../../../hooks/v2Hooks/useHostProfile";
 import { Button, ButtonLink, FullPageSpinner } from "../../../components/v2Components/ui";
-import { FormError, HostField, VerifiedBadge } from "../../../components/v2Components/host/HostUi";
+import { FormError, HostClosedBanner, HostField, VerifiedBadge } from "../../../components/v2Components/host/HostUi";
 import { inputClass } from "../../../components/v2Components/host/hostStyles";
 import { fieldErrors, formErrorText, trackHost } from "../../../utils/v2Utils/host";
 import { flyerHref } from "../../../utils/v2Utils/hostOffer";
@@ -53,6 +53,18 @@ export default function HostOnboardingPage() {
 
   if (loadError) return <div className="max-w-xl mx-auto px-5 py-16"><FormError message={loadError} /></div>;
   if (step === null) return <FullPageSpinner />;
+
+  // A closed host can't change their setup or submit verification.
+  if (profile?.closedAt) {
+    return (
+      <div className="max-w-2xl mx-auto px-5 md:px-8 pt-10 pb-24 space-y-6">
+        <p className="text-[11px] uppercase tracking-[0.25em] text-ink-muted">Hodrac Host</p>
+        <h1 className="text-4xl font-light text-ink">Set up hosting</h1>
+        <HostClosedBanner profile={profile} />
+        <ButtonLink to={ROUTES.HOST.TRIPS} size="lg">Go to your trips</ButtonLink>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-5 md:px-8 pt-10 pb-24">

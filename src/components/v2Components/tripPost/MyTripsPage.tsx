@@ -408,7 +408,7 @@ function MyPostCard({
   const hostProfile = useHostProfile();
   const hosted = post.trip.tripType === "hosted";
   // A community trip can become hosted while nobody has been approved yet.
-  const canSellSeats = HOST_ENABLED && !hosted && !!hostProfile?.payoutAccountSet &&
+  const canSellSeats = HOST_ENABLED && !hosted && !!hostProfile?.payoutAccountSet && !hostProfile.closedAt &&
     (post.trip.approvedCount ?? 0) === 0 && post.trip.status === "Open";
   const [editing, setEditing] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);

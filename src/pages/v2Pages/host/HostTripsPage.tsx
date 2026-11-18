@@ -3,7 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { BarChart3, ExternalLink, Globe2, Lock, Pencil, Plus, Users } from "lucide-react";
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { ButtonLink, EmptyState, FullPageSpinner } from "../../../components/v2Components/ui";
-import { FormError, VerifiedBadge } from "../../../components/v2Components/host/HostUi";
+import { FormError, HostClosedBanner, VerifiedBadge } from "../../../components/v2Components/host/HostUi";
 import { formatNaira, formErrorText } from "../../../utils/v2Utils/host";
 import { foundingOfferOpen } from "../../../utils/v2Utils/hostOffer";
 import { ROUTES, hostEditTripPath, hostManifestPath, tripPath } from "../../../utils/v2Utils/routes";
@@ -27,6 +27,7 @@ export default function HostTripsPage() {
   if (!data.profile) return <Navigate to={ROUTES.HOST.ONBOARDING} replace />;
 
   const { profile, trips } = data;
+  const closed = !!profile.closedAt;
   const upcoming = trips.filter(t => t.isUpcoming);
   const past = trips.filter(t => !t.isUpcoming);
 
@@ -41,15 +42,16 @@ export default function HostTripsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <ButtonLink to={ROUTES.HOST.REPORTS} variant="outline"><BarChart3 className="w-4 h-4" /> Weekly report</ButtonLink>
-          <ButtonLink to={ROUTES.HOST.NEW_TRIP}><Plus className="w-4 h-4" /> New hosted trip</ButtonLink>
+          {!closed && <ButtonLink to={ROUTES.HOST.NEW_TRIP}><Plus className="w-4 h-4" /> New hosted trip</ButtonLink>}
         </div>
       </header>
 
-      <Banners profile={profile} />
+      {closed ? <HostClosedBanner profile={profile} /> : <Banners profile={profile} />}
 
       {trips.length === 0 ? (
-        <EmptyState emoji="🧳" title="No hosted trips yet" subtitle="Create a trip page with your price, deposit and instalments, then share the link."
-          action={<ButtonLink to={ROUTES.HOST.NEW_TRIP}>Create a hosted trip</ButtonLink>} />
+        <EmptyState emoji="🧳" title="No hosted trips yet"
+          subtitle={closed ? "Your host account is closed, so you can't create hosted trips." : "Create a trip page with your price, deposit and instalments, then share the link."}
+          action={closed ? undefined : <ButtonLink to={ROUTES.HOST.NEW_TRIP}>Create a hosted trip</ButtonLink>} />
       ) : (
         <>
           {upcoming.length > 0 && <TripList title="Upcoming" trips={upcoming} />}
