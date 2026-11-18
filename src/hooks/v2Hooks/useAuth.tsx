@@ -70,10 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const userId       = tokenStore.getUserId();
     const refreshToken = tokenStore.getRefresh();
-    if (userId && refreshToken) {
-      await authApi.logout(userId, refreshToken).catch(() => {});
+    if (refreshToken) {
+      await authApi.logout(refreshToken).catch(() => {});
     }
     tokenStore.clear();
     await stopHubConnections();

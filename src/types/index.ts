@@ -379,7 +379,12 @@ export interface WishlistFilters {
 // Shared types for the trip-posting feature. Mirrors backend/Dtos/TripPostDto.cs
 // and the Models — keep these in sync if the C# side changes shape.
 
+import type { FeeMode, InterestPaymentStatus, Kobo, MyNextPayment, TripHost, TripInstalment } from "./host";
+
 export type TripPostStatus = "Open" | "Closed" | "Cancelled";
+
+// "community" = today's free trips; "hosted" = Hodrac Host (paid seats).
+export type TripType = "community" | "hosted";
 
 export type TripInterestStatus = "Requested" | "Approved" | "Declined" | "Withdrawn";
 
@@ -413,6 +418,32 @@ export interface TripPost {
   status: TripPostStatus;
   createdAt: string; // ISO datetime
   myInterestStatus?: TripInterestStatus | null;
+  // The signed-in viewer's own request (null without one; absent logged out).
+  // On community trips only myInterestId is set.
+  myInterestId?: string | null;
+  myPaymentStatus?: InterestPaymentStatus | null;
+  mySeatHoldExpiresAt?: string | null;
+  myAmountPaidKobo?: Kobo | null;
+  myOwesKobo?: Kobo | null;
+  myTermsVersionAccepted?: number | null;
+  myNextPayment?: MyNextPayment | null; // null once the hold has expired
+
+  // Hodrac Host. normalizeTrip defaults tripType to "community"; every field
+  // below is null/absent on community trips. Money is kobo, NGN.
+  tripType?: TripType;
+  isHostedTrip?: boolean;
+  isListed?: boolean;          // private (link-only) hosted trips are false
+  pricePerSeatKobo?: Kobo | null;
+  currency?: string | null;
+  depositKobo?: Kobo | null;
+  instalments?: TripInstalment[] | null;
+  feeMode?: FeeMode | null;
+  travellerFeePreviewKobo?: Kobo | null; // booking fee on the full price (0 if absorbed/waived)
+  seatsLeft?: number | null;
+  inclusions?: string | null;
+  exclusions?: string | null;
+  termsVersion?: number | null;
+  host?: TripHost | null;
 }
 
 export interface TripInterest {
@@ -424,6 +455,9 @@ export interface TripInterest {
   message: string | null;
   requestedAt: string;
   respondedAt: string | null;
+  // Hosted trips; "NotRequired" (or absent) on community trips.
+  paymentStatus?: InterestPaymentStatus;
+  seatHoldExpiresAt?: string | null;
 }
 
 export interface ThreadMessage {
@@ -445,7 +479,19 @@ export type NotificationType =
   | "InterestApproved"
   | "InterestDeclined"
   | "NewThreadMessage"
-  | "TripStartingSoon";
+  | "TripStartingSoon"
+  | "TripCancelled"
+  // Hodrac Host
+  | "HostVerified"
+  | "HostRejected"
+  | "HostVerificationRevoked"
+  | "HostedSeatWithdrawn" // to the host
+  | "PaymentReceived"     // to the host
+  | "PaymentConfirmed"    // to the traveller
+  | "InstalmentDue"       // to the traveller
+  | "SeatHoldExpiring"    // to the traveller
+  | "SeatHoldExpired"     // to both sides
+  | "DisputeOpened";      // to the host
 
 export interface TripNotification {
   id: string;
@@ -547,7 +593,8 @@ export interface TripApiClient {
   updateTrip(tripId: string, changes: UpdateTripPayload): Promise<TripPost>;
   getTrip: (tripId: string) => Promise<TripPost>;
   getPublicTrip(tripId: string): Promise<TripPost>;
-  requestToJoin(tripId: string): Promise<void>;
+  // contactPhone: optional, hosted trips (so the host can reach them on WhatsApp).
+  requestToJoin(tripId: string, contactPhone?: string): Promise<void>;
   openThread(tripId: string): void;
 
   // "My Trips" page

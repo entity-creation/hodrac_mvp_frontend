@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import CreateTripPost, { type InitialTripSelection } from "../../../components/v2Components/tripPost/CreateTripPost";
 import { destinationsApi, tripClient, wishlistsApi } from "../../../dataStore/v2Api/client";
 import { ROUTES } from "../../../utils/v2Utils/routes";
+import { HOST_ENABLED } from "../../../utils/v2Utils/host";
+import { Link } from "react-router-dom";
 
 // /create-trip?destinationId=… or ?wishlistId=… preselects the place, so
 // "Plan a trip here" on a destination/wishlist page lands ready to post.
@@ -41,11 +43,20 @@ export default function CreateTripPage() {
   }, [destinationId, wishlistId]);
 
   return (
-    <CreateTripPost
-      api={tripClient}
-      onSubmit={tripClient.createTrip}
-      initialSelection={initial}
-      onCreated={() => navigate(ROUTES.AUTH.TRIPHUB)}
-    />
+    <>
+      <CreateTripPost
+        api={tripClient}
+        onSubmit={tripClient.createTrip}
+        initialSelection={initial}
+        onCreated={() => navigate(ROUTES.AUTH.TRIPHUB)}
+      />
+      {HOST_ENABLED && (
+        <p className="max-w-3xl mx-auto px-5 md:px-8 -mt-12 pb-20 text-sm text-ink-soft">
+          Selling seats on this trip?{" "}
+          <Link to={ROUTES.HOST.NEW_TRIP} className="text-ink underline underline-offset-4">Use Hodrac Host</Link>{" "}
+          to take deposits and instalments, with your terms signed before anyone pays.
+        </p>
+      )}
+    </>
   );
 }

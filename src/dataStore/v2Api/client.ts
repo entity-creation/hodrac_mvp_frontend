@@ -98,6 +98,20 @@ export function validationDetails(e: unknown): string | null {
   return parts.length ? parts.slice(0, 3).join("; ") : null;
 }
 
+// Error responses arrive as JSON objects, JSON strings or plain text
+// (TripsController/PaymentsController return bare strings). A string body is
+// wrapped as { error } so errorMessage() reads it like the others.
+async function readErrorBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text.trim()) return { error: res.statusText };
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === "string" ? { error: parsed } : parsed;
+  } catch {
+    return { error: text };
+  }
+}
+
 // Accepts { error }, { message } and ASP.NET ProblemDetails ({ title, detail }).
 function errorMessage(body: unknown, status: number): string {
   const b = (body ?? {}) as Record<string, unknown>;
@@ -153,7 +167,8 @@ async function request<T>(
 ): Promise<T> {
   const token = tokenStore.getAccess();
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    // FormData bodies need the browser's multipart boundary, so no JSON type.
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string> ?? {}),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -188,7 +203,7 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
+    const body = await readErrorBody(res);
     throw new ApiError(res.status, errorMessage(body, res.status), body);
   }
 
@@ -210,6 +225,8 @@ const patch = <T>(path: string, body: unknown) => request<T>(path, { method: "PA
 // refresh and error handling.
 export const http = {
   get, post, put, patch, del,
+  // multipart/form-data POST (file uploads).
+  postForm: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
   // POST that also returns the response's Location header.
   postWithLocation: async <T>(path: string, body: unknown) => {
     let location: string | null = null;
@@ -231,7 +248,7 @@ export async function downloadFile(path: string, fallbackName: string): Promise<
     if (fresh) res = await fetchWith(fresh);
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
+    const body = await readErrorBody(res);
     throw new ApiError(res.status, errorMessage(body, res.status), body);
   }
 
@@ -261,8 +278,9 @@ export const authApi = {
   refresh: (userId: string, refreshToken: string) =>
     post<AuthResponse>("/api/auth/refresh", { userId, refreshToken }),
 
-  logout: (userId: string, refreshToken: string, logoutAllDevices = false) =>
-    post<void>("/api/auth/logout", { userId, refreshToken, logoutAllDevices }),
+  // The server takes the user from the access token (or the refresh token's owner).
+  logout: (refreshToken: string, logoutAllDevices = false) =>
+    post<void>("/api/auth/logout", { refreshToken, logoutAllDevices }),
 
   me: () => get<UserDto>("/api/auth/me"),
 
@@ -393,7 +411,8 @@ export const tripClient: TripApiClient = {
     }).then(normalizeTrip);
   },
 
-  requestToJoin: (tripId: string) => post<void>(`/api/trips/${tripId}/interests`, {}),
+  requestToJoin: (tripId: string, contactPhone?: string) =>
+    post<void>(`/api/trips/${tripId}/interests`, contactPhone?.trim() ? { contactPhone: contactPhone.trim() } : {}),
 
   // 409 if the request is no longer pending or approved.
   withdrawInterest: (tripId: string, interestId: string) =>
@@ -710,6 +729,7 @@ export function normalizeTrip(trip: TripPost): TripPost {
     ...trip,
     status,
     stops: trip.stops ?? [],
+    tripType: trip.tripType ?? (trip.isHostedTrip ? "hosted" : "community"),
     myInterestStatus: trip.myInterestStatus == null ? trip.myInterestStatus : normalizeInterestStatus(trip.myInterestStatus),
   };
 }

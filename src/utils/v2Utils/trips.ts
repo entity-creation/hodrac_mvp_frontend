@@ -25,6 +25,13 @@ export function tripCapacity(trip: TripPost): {
   isFull: boolean;
   label: string | null; // e.g. "3 going · 2 spots left", "Full", "Up to 5"
 } {
+  // Hosted trips sell seats: show what's left to buy (counts held seats).
+  if (trip.tripType === "hosted" && typeof trip.seatsLeft === "number") {
+    const left = trip.seatsLeft;
+    const going = typeof trip.goingCount === "number" ? trip.goingCount : null;
+    return { going, spotsLeft: left, isFull: left === 0, label: left === 0 ? "Sold out" : `${left} ${left === 1 ? "seat" : "seats"} left` };
+  }
+
   const going = typeof trip.goingCount === "number" ? trip.goingCount : null;
   const spotsLeft = typeof trip.spotsLeft === "number" ? trip.spotsLeft : null;
   const isFull = spotsLeft === 0;

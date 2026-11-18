@@ -1,5 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { HOST_ENABLED } from "../../../utils/v2Utils/host";
+import { useHostProfile } from "../../../hooks/v2Hooks/useHostProfile";
+import { hostEditTripPath, hostManifestPath, tripPath, tripPayPath } from "../../../utils/v2Utils/routes";
+import { formatNaira } from "../../../utils/v2Utils/host";
+import { PaymentStatusChip } from "../host/HostUi";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
 import EditTripModal from "./EditTripModal";
 import type {
@@ -38,6 +43,12 @@ export default function MyTripsPage({ api }: MyTripsPageProps) {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">
             Keep track of trips you've asked to join and people interested in
             the trips you've shared.
+            {HOST_ENABLED && (
+              <>
+                {" "}
+                <Link to="/payments" className="text-ink underline underline-offset-4">Payment receipts</Link>
+              </>
+            )}
           </p>
         </div>
 
@@ -188,6 +199,31 @@ function MyRequestsTab({ api }: { api: TripApiClient }) {
             <StatusBadge status={r.status} />
           </div>
 
+          {/* Hosted trips: payment progress and the next payment */}
+          {r.trip.tripType === "hosted" && r.status === "Approved" && r.trip.myPaymentStatus && (
+            <div className="mt-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+                <PaymentStatusChip status={r.trip.myPaymentStatus} />
+                {(r.trip.myAmountPaidKobo ?? 0) > 0 && (
+                  <span>Paid {formatNaira(r.trip.myAmountPaidKobo)} of {formatNaira(r.trip.pricePerSeatKobo)}</span>
+                )}
+              </div>
+              {(r.trip.pricePerSeatKobo ?? 0) > 0 && (
+                <div className="h-2 rounded-full bg-cream-deep overflow-hidden">
+                  <div className="h-full bg-palm" style={{ width: `${Math.min(100, ((r.trip.myAmountPaidKobo ?? 0) / (r.trip.pricePerSeatKobo ?? 1)) * 100)}%` }} />
+                </div>
+              )}
+              {r.trip.myNextPayment && (
+                <p className="text-sm text-ink-soft">
+                  Next: {formatNaira(r.trip.myNextPayment.totalKobo)}
+                  {r.trip.myNextPayment.dueDate && ` due ${new Date(`${r.trip.myNextPayment.dueDate}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`}
+                  {" · "}
+                  <Link to={tripPayPath(r.trip.id)} className="text-ink underline underline-offset-4">Pay now</Link>
+                </p>
+              )}
+            </div>
+          )}
+
           {r.message && (
             <div className="mt-5 rounded-xl bg-cream px-4 py-3">
               <p className="text-sm leading-6 text-ink-soft">
@@ -201,17 +237,21 @@ function MyRequestsTab({ api }: { api: TripApiClient }) {
               {r.status === "Approved" && (
                 <button
                   type="button"
-                  onClick={() => navigate(`/trip-thread/${r.trip.id}`)}
+                  onClick={() => navigate(r.trip.tripType === "hosted" ? tripPath(r.trip.id) : `/trip-thread/${r.trip.id}`)}
                   className="rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-ink-soft"
                 >
-                  Open trip chat
+                  {r.trip.tripType === "hosted" ? "Your seat and payments" : "Open trip chat"}
                 </button>
               )}
 
               {confirmingId === r.interestId ? (
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-ink-soft">
-                    {r.status === "Approved" ? "Leave this trip?" : "Withdraw your request?"}
+                    {r.status === "Approved"
+                      ? r.trip.tripType === "hosted"
+                        ? "Leave this trip? Refunds follow the host's terms."
+                        : "Leave this trip?"
+                      : "Withdraw your request?"}
                   </span>
                   <button
                     type="button"
@@ -365,6 +405,11 @@ function MyPostCard({
   onTripUpdated: (trip: TripPost) => void;
 }) {
   const navigate = useNavigate();
+  const hostProfile = useHostProfile();
+  const hosted = post.trip.tripType === "hosted";
+  // A community trip can become hosted while nobody has been approved yet.
+  const canSellSeats = HOST_ENABLED && !hosted && !!hostProfile?.payoutAccountSet &&
+    (post.trip.approvedCount ?? 0) === 0 && post.trip.status === "Open";
   const [editing, setEditing] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
@@ -406,9 +451,11 @@ function MyPostCard({
   };
 
   const [respondError, setRespondError] = useState("");
+  const [respondNote, setRespondNote] = useState("");
 
   const respond = async (interestId: string, approve: boolean) => {
     setRespondError("");
+    setRespondNote("");
     try {
       await api.respondToInterest(post.trip.id, interestId, approve);
     } catch (e) {
@@ -421,6 +468,7 @@ function MyPostCard({
     );
 
     if (approve) {
+      if (hosted) setRespondNote("Approved. Their seat is held while they pay the deposit, and they join the trip chat once they've paid.");
       onApproved(post.trip.id);
     } else {
       onDeclined(post.trip.id);
@@ -512,13 +560,25 @@ function MyPostCard({
             {!(post.isHidden || post.trip.isHidden) && (
               <ShareButton type="trip" id={post.trip.id} variant="button" label="Share" className="px-4! py-2!" />
             )}
+            {hosted && (
+              <Link to={hostManifestPath(post.trip.id)}
+                className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink-soft transition">
+                Manage seats
+              </Link>
+            )}
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => (hosted ? navigate(hostEditTripPath(post.trip.id)) : setEditing(true))}
               className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:border-ink transition"
             >
               Edit trip
             </button>
+            {canSellSeats && (
+              <Link to={hostEditTripPath(post.trip.id)}
+                className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:border-ink transition">
+                Sell seats on this trip
+              </Link>
+            )}
 
             {status === "Open" ? (
               <button
@@ -615,6 +675,12 @@ function MyPostCard({
 
           {respondError && (
             <p role="alert" className="mb-3 text-sm text-red-700">{respondError}</p>
+          )}
+          {respondNote && (
+            <p className="mb-3 text-sm text-palm">
+              {respondNote}{" "}
+              <Link to={hostManifestPath(post.trip.id)} className="underline underline-offset-4">Manage seats</Link>
+            </p>
           )}
 
           {!loadingRequesters &&

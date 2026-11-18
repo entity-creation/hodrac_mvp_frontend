@@ -36,9 +36,19 @@ function readEnvFile(file: string): Record<string, string> {
   );
 }
 
-// Backend: VITE_API_BASE_URL from the environment or .env (same setting the
-// app uses), falling back to production.
-const env = { ...readEnvFile(".env"), ...readEnvFile(".env.production"), ...process.env };
+// Backend: VITE_API_BASE_URL, read like Vite does for the same mode
+// (`--mode staging` → .env, .env.local, .env.staging, .env.staging.local;
+// default "production"), so a staging build prerenders from the staging API.
+// A real environment variable wins. Falls back to production.
+const modeArg = process.argv.indexOf("--mode");
+export const MODE = (modeArg >= 0 && process.argv[modeArg + 1]) || "production";
+const env = {
+  ...readEnvFile(".env"),
+  ...readEnvFile(".env.local"),
+  ...readEnvFile(`.env.${MODE}`),
+  ...readEnvFile(`.env.${MODE}.local`),
+  ...process.env,
+};
 export const API_BASE_URL = (env.VITE_API_BASE_URL || "https://hodrac-mvp2-backend-2050972.onrender.com").replace(/\/$/, "");
 
 export async function getJson<T>(endpoint: string, timeoutMs = 30000): Promise<T> {

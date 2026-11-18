@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import {
   LayoutDashboard, Users, Plane, Handshake, Inbox, Mail, MapPin, Tags, Globe,
-  Map, Star, Sparkles, BadgeCheck, ArrowLeft, ShieldAlert, PieChart, type LucideIcon,
+  Map, Star, Sparkles, BadgeCheck, ArrowLeft, ShieldAlert, PieChart, Briefcase, Wallet, LineChart, type LucideIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAdminStatus, clearAdminCache, type AdminCheck } from "./useAdmin";
@@ -23,6 +23,10 @@ import FeaturedDestinationsPage from "./pages/FeaturedDestinationsPage";
 import CreatorsPage from "./pages/CreatorsPage";
 import TaxonomyPage from "./pages/TaxonomyPage";
 import PlacesPage from "./pages/PlacesPage";
+import HostsPage from "./pages/HostsPage";
+import HostPaymentsPage from "./pages/HostPaymentsPage";
+import HostingInsightsPage from "./pages/HostingInsightsPage";
+import { HOST_ENABLED } from "../utils/v2Utils/host";
 
 // Admin dashboard at /admin. Lazy-loaded from vzApp/App.tsx (its own bundle)
 // and wrapped in <RequireAuth>, so only signed-in users reach this; the admin
@@ -54,6 +58,14 @@ const ADMIN_SECTIONS: { group: string; items: AdminNavItem[] }[] = [
     group: "Trips",
     items: [{ to: "/admin/trips", label: "Trips & moderation", icon: Plane }],
   },
+  ...(HOST_ENABLED ? [{
+    group: "Hosting",
+    items: [
+      { to: "/admin/hosts", label: "Hosts & verification", icon: Briefcase },
+      { to: "/admin/payments", label: "Payments", icon: Wallet },
+      { to: "/admin/hosting", label: "Hosting insights", icon: LineChart },
+    ],
+  }] : []),
   {
     group: "Partners",
     items: [
@@ -236,6 +248,10 @@ export default function AdminApp() {
         <Route path="creators" element={<CreatorsPage />} />
         <Route path="taxonomy" element={<TaxonomyPage />} />
         <Route path="places" element={<PlacesPage />} />
+        {HOST_ENABLED && <Route path="hosts" element={<HostsPage />} />}
+        {HOST_ENABLED && <Route path="hosts/:id" element={<HostsPage />} />}
+        {HOST_ENABLED && <Route path="payments" element={<HostPaymentsPage />} />}
+        {HOST_ENABLED && <Route path="hosting" element={<HostingInsightsPage />} />}
         <Route path="*" element={<AdminNotFound />} />
       </Route>
     </Routes>

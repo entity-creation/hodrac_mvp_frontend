@@ -6,6 +6,9 @@ import { tripClient } from "../../../dataStore/v2Api/client";
 import type { TripPost } from "../../../types";
 import { tripCapacity } from "../../../utils/v2Utils/trips";
 import ShareButton from "../../../components/v2Components/share/ShareButton";
+import { useAuth } from "../../../hooks/v2Hooks/useAuth";
+import { ButtonLink } from "../../../components/v2Components/ui";
+import { tripPath, tripPayPath } from "../../../utils/v2Utils/routes";
 
 
 
@@ -13,6 +16,9 @@ export default function TripThreadChatPage() {
   const [trip, setTrip] = useState<TripPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Hosted trips: travellers join the chat after their first payment.
+  const [awaitingPayment, setAwaitingPayment] = useState(false);
+  const { user } = useAuth();
 
   const tripId = window.location.pathname.split("/")[2];
 
@@ -29,6 +35,10 @@ export default function TripThreadChatPage() {
 
         if (!found) {
           throw new Error("Trip not found.");
+        }
+
+        if (found.tripType === "hosted" && found.authorUserId !== user?.userId) {
+          if (!cancelled) setAwaitingPayment((found.myAmountPaidKobo ?? 0) <= 0);
         }
 
         if (!cancelled) {
@@ -54,7 +64,7 @@ export default function TripThreadChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [tripId]);
+  }, [tripId, user?.userId]);
 
   const handleBack = () => {
     window.history.back();
@@ -73,6 +83,24 @@ export default function TripThreadChatPage() {
               <div className="h-4 w-1/2 bg-ink/10 rounded animate-pulse" />
               <div className="h-[420px] bg-cream-deep rounded-2xl animate-pulse" />
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (trip && awaitingPayment) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <div className="max-w-xl mx-auto px-5 md:px-8 py-16 text-center">
+          <h1 className="text-2xl font-normal text-ink">Pay your deposit to join the trip chat</h1>
+          <p className="text-ink-soft mt-3">
+            On hosted trips, travellers join the group chat once their deposit is paid.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {trip.myInterestStatus === "Approved"
+              ? <ButtonLink to={tripPayPath(trip.id)} size="lg">Pay your deposit</ButtonLink>
+              : <ButtonLink to={tripPath(trip.id)} size="lg">View the trip</ButtonLink>}
           </div>
         </div>
       </div>

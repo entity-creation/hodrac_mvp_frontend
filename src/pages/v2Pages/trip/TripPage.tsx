@@ -11,6 +11,7 @@ import { colourwayFor } from "../../../utils/v2Utils/format";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
 import { destinationPath, ROUTES } from "../../../utils/v2Utils/routes";
 import type { TripPost, TripInterestStatus } from "../../../types";
+import { HostBlock, HostedDetails, HostedJoinPanel, HostedPriceBox } from "../../../components/v2Components/host/HostedTrip";
 
 // /trips/:id — the shareable trip page. Works without login (public endpoint:
 // no author or head-counts); signed-in visitors get the full trip, including
@@ -63,6 +64,7 @@ export default function TripPage() {
 
   const capacity = tripCapacity(trip);
   const isAuthor = !!user?.userId && trip.authorUserId === user.userId;
+  const hosted = trip.tripType === "hosted";
   const status: TripInterestStatus | null = trip.myInterestStatus ?? null;
   const open = trip.status === "Open";
   const colour = colourwayFor(trip.id);
@@ -114,11 +116,12 @@ export default function TripPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pt-10">
         <div className="lg:col-span-2">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Badge tone="neutral">Trip</Badge>
+            <Badge tone="neutral">{hosted ? "Hosted trip" : "Trip"}</Badge>
             {!open && <Badge tone="sun">{trip.status}</Badge>}
             {trip.isHidden && isAuthor && <Badge tone="sponsored">Hidden by moderators</Badge>}
           </div>
           <h1 className="text-4xl md:text-5xl font-light text-ink leading-[1.05]">{trip.destinationLabel}</h1>
+          {hosted && <div className="mt-5"><HostBlock trip={trip} /></div>}
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 text-sm text-ink-soft">
             <span className="inline-flex items-center gap-1.5"><CalendarDays className="w-4 h-4" /> {dateLabel}</span>
@@ -148,8 +151,17 @@ export default function TripPage() {
               <Map className="w-4 h-4" /> See the itinerary this trip follows
             </Link>
           )}
+
+          {hosted && <HostedDetails trip={trip} />}
         </div>
 
+        {hosted ? (
+          <aside className="space-y-4 lg:sticky lg:top-24 self-start">
+            <HostedPriceBox trip={trip} />
+            <HostedJoinPanel trip={trip} isAuthor={isAuthor} onTripChange={setTrip} />
+            <ShareButton type="trip" id={trip.id} variant="button" label="Share with friends" className="w-full justify-center" />
+          </aside>
+        ) : (
         <aside>
           <div className="sticky top-24 rounded-2xl border border-line bg-white p-6 flex flex-col gap-3 shadow-pop">
             <p className="text-sm text-ink-soft">
@@ -172,6 +184,7 @@ export default function TripPage() {
             </Link>
           </div>
         </aside>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { connection, getHubConnection } from "../../utils/v2Utils/signalR_connection";
+import { connection, getHubConnection, logHubError } from "../../utils/v2Utils/signalR_connection";
 import type { ThreadMessage, TripInterest, TripNotification, TripPost } from "../../types";
 import type { HubConnection } from "@microsoft/signalr";
 
@@ -27,7 +27,7 @@ export function useWishlistSignalR(
       }
     };
 
-    start();
+    start().catch((error) => logHubError("Failed to join wishlist hub", error));
 
     return () => {
     //   mounted = false;
@@ -61,7 +61,7 @@ export function useExploreWishlistSignalR(
       });
     };
 
-    start();
+    start().catch((error) => logHubError("Failed to join wishlist hub", error));
 
     return () => {
     //   mounted = false;
@@ -113,7 +113,7 @@ export function useTripInterestHub({
         connection.on("TripInterestStatusChanged", statusChangedHandler);
       })
       .catch((error) => {
-        console.error("Failed to connect to trip hub", error);
+        logHubError("Failed to connect to trip hub", error);
       });
 
     return () => {
@@ -150,7 +150,7 @@ export function useTripInterestUpdatedHub({
         connection.on("TripInterestUpdated", interestReceivedHandler);
       })
       .catch((error) => {
-        console.error("Failed to connect to trip hub", error);
+        logHubError("Failed to connect to trip hub", error);
       });
 
     return () => {
@@ -190,7 +190,7 @@ export function useTripPostCreatedHub({
         connection.on("TripPostCreated", tripPostCreatedHandler);
       })
       .catch((error) => {
-        console.error("Failed to connect to trip hub", error);
+        logHubError("Failed to connect to trip hub", error);
       });
 
     return () => {
@@ -255,7 +255,7 @@ export function useTripThreadHub(
         connection.on("ThreadMessageDeleted", messageDeletedHandler);
       })
       .catch((error) => {
-        console.error("Failed to connect to trip thread hub", error);
+        logHubError("Failed to connect to trip thread hub", error);
       });
 
     return () => {
@@ -299,7 +299,7 @@ export function useTripPostLifecycleHub({
         connection.on("TripPostRemoved", removedHandler);
         connection.on("TripPostStatusChanged", statusHandler);
       })
-      .catch((error) => console.error("Failed to connect to trip hub", error));
+      .catch((error) => logHubError("Failed to connect to trip hub", error));
 
     return () => {
       active = false;
@@ -342,7 +342,7 @@ export function useNotificationHub(
         connection.onreconnected(reconnectedHandler);
       })
       .catch((error) => {
-        console.error("Failed to connect to notification hub", error);
+        logHubError("Failed to connect to notification hub", error);
       });
 
     return () => {

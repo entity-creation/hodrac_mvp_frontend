@@ -24,8 +24,24 @@ export const ROUTES = {
         TRIPHUB: "/trip-hub",
         TRIPTHREAD: "/trip-thread",
         ACCOUNT: "/account",
-    }
+    },
+    // Hodrac Host. Backend emails link to /host, /host/trips/{id} and
+    // /payments/{reference}, so keep those paths stable.
+    HOST: {
+        HOME: "/host",                    // pitch for visitors, dashboard for hosts
+        ONBOARDING: "/host/onboarding",
+        TRIPS: "/host/trips",
+        NEW_TRIP: "/host/trips/new",
+        REPORTS: "/host/reports",
+        PAYMENT_CALLBACK: "/trips/payment/callback",
+    },
 } as const;
+
+export const tripPath = (tripId: string) => `/trips/${tripId}`;
+export const tripPayPath = (tripId: string) => `/trips/${tripId}/pay`;
+export const hostManifestPath = (tripId: string) => `/host/trips/${tripId}`;
+export const hostEditTripPath = (tripId: string) => `/host/trips/${tripId}/edit`;
+export const receiptPath = (reference: string) => `/payments/${encodeURIComponent(reference)}`;
 
 // Deep links used across the app.
 // Canonical detail URLs: always include the slug so each item has one URL.

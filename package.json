@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && tsx scripts/prerender.ts",
+    "dev:staging": "vite --mode staging",
+    "build:staging": "tsc -b && vite build --mode staging && tsx scripts/prerender.ts --mode staging",
     "lint": "eslint .",
     "preview": "vite preview",
     "sitemap": "tsx generate-sitemap.ts"

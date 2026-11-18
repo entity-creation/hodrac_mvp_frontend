@@ -11,7 +11,9 @@ import { useTripInterestUpdatedHub, type TripInterestUpdate } from "../../../hoo
 import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
 import { colourwayFor } from "../../../utils/v2Utils/format";
 import { tripCapacity } from "../../../utils/v2Utils/trips";
-import { destinationPath } from "../../../utils/v2Utils/routes";
+import { destinationPath, tripPath } from "../../../utils/v2Utils/routes";
+import { formatNaira } from "../../../utils/v2Utils/host";
+import { VerifiedBadge } from "../host/HostUi";
 import { Modal } from "../ui";
 import { isApiError, normalizeInterestStatus } from "../../../dataStore/v2Api/client";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
@@ -54,6 +56,9 @@ export default function TripFeedCard({
   const requireAuth = useRequireAuth();
 
   const isAuthor = !!currentUserId && trip.authorUserId === currentUserId;
+  // Hosted (paid) trips: joining needs the trip page (phone, terms, payment),
+  // and approval no longer means chat access, so the card links there instead.
+  const hosted = trip.tripType === "hosted";
   const capacity = tripCapacity(trip);
   const colour = colourwayFor(trip.id);
   const extraStops = Math.max(0, trip.stops.length - VISIBLE_STOPS);
@@ -169,9 +174,17 @@ export default function TripFeedCard({
           {trip.caption || <span className="text-ink-muted italic">No description yet.</span>}
         </p>
 
-        {/* Itinerary link: fixed slot */}
-        <div className="h-5 mt-3">
-          {trip.wishlistId && (
+        {/* Itinerary link (or price for hosted trips): fixed slot */}
+        <div className="h-5 mt-3 flex items-center gap-2 overflow-hidden">
+          {hosted ? (
+            <>
+              <span className="text-sm text-ink whitespace-nowrap">
+                <span className="font-medium">{formatNaira(trip.pricePerSeatKobo)}</span>
+                <span className="text-ink-muted"> / seat</span>
+              </span>
+              {trip.host?.verified && <VerifiedBadge />}
+            </>
+          ) : trip.wishlistId && (
             <Link
               to={`/wishlists/${trip.wishlistId}`}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink"
@@ -184,7 +197,18 @@ export default function TripFeedCard({
         {/* Actions: pinned to the bottom, fixed height */}
         <div className="mt-auto pt-4">
           <div className="pt-4 border-t border-line flex items-center gap-2 h-14">
-            {!isAuthor && (
+            {!isAuthor && hosted && (
+              <Link
+                to={tripPath(trip.id)}
+                className="rounded-full px-4 py-2 text-sm font-medium bg-ink text-white hover:bg-ink-soft transition-colors"
+              >
+                {myInterestStatus === "Approved" ? "View your seat"
+                  : myInterestStatus === "Requested" ? "Request sent"
+                  : capacity.isFull ? "Sold out" : "View trip"}
+              </Link>
+            )}
+
+            {!isAuthor && !hosted && (
               <button
                 disabled={busy || blocked || !!myInterestStatus || (capacity.isFull && !myInterestStatus)}
                 onClick={handleInterested}
@@ -209,7 +233,7 @@ export default function TripFeedCard({
               </button>
             )}
 
-            {(myInterestStatus === "Approved" || isAuthor) && (
+            {((myInterestStatus === "Approved" && !hosted) || isAuthor) && (
               <button
                 onClick={() => onOpenThread(trip.id)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-ink/25 px-4 py-2 text-sm font-medium text-ink hover:border-ink transition-colors"
@@ -237,6 +261,11 @@ export default function TripFeedCard({
         <div className="p-6 md:p-8">
           <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-ink-muted mb-2">Join requests</p>
           <h3 className="text-2xl font-normal text-ink mb-6 pr-10">{trip.destinationLabel}</h3>
+          {hosted && (
+            <p className="text-sm text-ink-soft -mt-3 mb-6">
+              Approving holds a seat while they pay the deposit. They join the trip chat once they've paid.
+            </p>
+          )}
           {tripInterest.length === 0 ? (
             <p className="text-sm text-ink-muted">No pending requests.</p>
           ) : (

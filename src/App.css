@@ -52,6 +52,9 @@
   --color-mint-300: #b9cdbd;
   --color-mint-500: #4c7a5a;
 
+  /* Hodrac Host: paid seats and the Verified host badge */
+  --color-palm: #0f6b55;
+
   /* Soft, layered shadows */
   --shadow-pop: 0 1px 2px rgb(20 20 20 / 0.04), 0 8px 24px -14px rgb(20 20 20 / 0.14);
   --shadow-pop-sm: 0 1px 2px rgb(20 20 20 / 0.05);

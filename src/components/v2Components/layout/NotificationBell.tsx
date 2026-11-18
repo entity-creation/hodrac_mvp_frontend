@@ -5,6 +5,7 @@ import { tripClient } from "../../../dataStore/v2Api/client";
 import { useTripNotifications } from "../../../hooks/v2Hooks/useTripNotifications";
 import type { NotificationType, TripNotification } from "../../../types";
 import { timeAgo } from "../../../utils/v2Utils/format";
+import { ROUTES, hostManifestPath, tripPath, tripPayPath } from "../../../utils/v2Utils/routes";
 
 const NOTIFICATION_COPY: Record<NotificationType, { icon: string; text: string }> = {
   InterestReceived: { icon: "🙋", text: "Someone asked to join your trip" },
@@ -12,10 +13,39 @@ const NOTIFICATION_COPY: Record<NotificationType, { icon: string; text: string }
   InterestDeclined: { icon: "📭", text: "Your request to join a trip was declined" },
   NewThreadMessage: { icon: "💬", text: "New message in your trip chat" },
   TripStartingSoon: { icon: "🧳", text: "Your trip is starting soon" },
+  TripCancelled: { icon: "🚫", text: "A trip you joined was cancelled" },
+  HostVerified: { icon: "✅", text: "You're a verified host" },
+  HostRejected: { icon: "📝", text: "Your host verification needs another look" },
+  HostVerificationRevoked: { icon: "⚠️", text: "Your Verified host badge was removed" },
+  HostedSeatWithdrawn: { icon: "🚪", text: "A traveller left your trip" },
+  PaymentReceived: { icon: "💸", text: "A traveller paid for your trip" },
+  PaymentConfirmed: { icon: "🧾", text: "Your payment is confirmed" },
+  InstalmentDue: { icon: "📅", text: "A trip payment is due soon" },
+  SeatHoldExpiring: { icon: "⏳", text: "Your seat hold ends soon: pay the deposit to keep it" },
+  SeatHoldExpired: { icon: "⌛", text: "A seat hold has expired" },
+  DisputeOpened: { icon: "⚖️", text: "A payment on your trip was disputed" },
 };
 
 // Where clicking a notification takes the user.
 function notificationPath(n: TripNotification): string {
+  const trip = n.tripPostId;
+  switch (n.type) {
+    case "HostVerified":
+    case "HostRejected":
+    case "HostVerificationRevoked":
+      return ROUTES.HOST.HOME;
+    case "PaymentReceived":
+    case "HostedSeatWithdrawn":
+    case "DisputeOpened":
+      return trip ? hostManifestPath(trip) : ROUTES.HOST.TRIPS;
+    case "PaymentConfirmed":
+    case "InstalmentDue":
+    case "SeatHoldExpiring":
+      return trip ? tripPayPath(trip) : "/trip-hub";
+    case "SeatHoldExpired": // sent to both sides; the trip page suits either
+      return trip ? tripPath(trip) : "/trip-hub";
+  }
+
   const opensThread =
     n.type === "NewThreadMessage" ||
     n.type === "InterestApproved" ||

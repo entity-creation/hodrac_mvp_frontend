@@ -8,11 +8,24 @@ import "../App.css";
 // Admin dashboard: its own bundle, only downloaded when someone opens /admin.
 const AdminApp = lazy(() => import("../admin/AdminApp"));
 
+// Hodrac Host pages: own chunks, registered only when HOST_ENABLED.
+const HostHomePage       = lazy(() => import("../pages/v2Pages/host/HostHomePage"));
+const HostOnboardingPage = lazy(() => import("../pages/v2Pages/host/HostOnboardingPage"));
+const HostTripFormPage   = lazy(() => import("../pages/v2Pages/host/HostTripFormPage"));
+const TripPayPage        = lazy(() => import("../pages/v2Pages/host/TripPayPage"));
+const PaymentCallbackPage = lazy(() => import("../pages/v2Pages/host/PaymentCallbackPage"));
+const ReceiptsPage       = lazy(() => import("../pages/v2Pages/host/ReceiptsPage"));
+const HostTripsPage      = lazy(() => import("../pages/v2Pages/host/HostTripsPage"));
+const HostManifestPage   = lazy(() => import("../pages/v2Pages/host/HostManifestPage"));
+const HostReportsPage    = lazy(() => import("../pages/v2Pages/host/HostReportsPage"));
+const host = (page: React.ReactNode) => <Suspense fallback={<FullPageSpinner />}>{page}</Suspense>;
+
 // Layout
 import AppNavBar from "../components/v2Components/layout/AppNavBar";
 import Footer from "../components/v2Components/pages/landingPage2/Footer";
 import RequireAuth from "../components/v2Components/auth/RequireAuth";
 import PageMeta from "../components/v2Components/seo/PageMeta";
+import { HOST_ENABLED } from "../utils/v2Utils/host";
 import { STATIC_PAGE_META } from "../utils/v2Utils/pageMeta";
 import { ButtonLink, FullPageSpinner } from "../components/v2Components/ui";
 
@@ -137,6 +150,16 @@ export default function App() {
               <Route path="/trip-thread/:id"              element={<TripThreadChatPage />} />
               <Route path="/trip-hub"                     element={<TripHubPage />} />
               <Route path="/account"                      element={<AccountPage />} />
+              {HOST_ENABLED && <Route path="/host/onboarding" element={host(<HostOnboardingPage />)} />}
+              {HOST_ENABLED && <Route path="/host/trips" element={host(<HostTripsPage />)} />}
+              {HOST_ENABLED && <Route path="/host/trips/new" element={host(<HostTripFormPage />)} />}
+              {HOST_ENABLED && <Route path="/host/trips/:id" element={host(<HostManifestPage />)} />}
+              {HOST_ENABLED && <Route path="/host/reports" element={host(<HostReportsPage />)} />}
+              {HOST_ENABLED && <Route path="/host/trips/:id/edit" element={host(<HostTripFormPage />)} />}
+              {HOST_ENABLED && <Route path="/trips/:id/pay" element={host(<TripPayPage />)} />}
+              {HOST_ENABLED && <Route path="/trips/payment/callback" element={host(<PaymentCallbackPage />)} />}
+              {HOST_ENABLED && <Route path="/payments" element={host(<ReceiptsPage />)} />}
+              {HOST_ENABLED && <Route path="/payments/:reference" element={host(<ReceiptsPage />)} />}
             </Route>
 
             {/* Auth */}
@@ -154,6 +177,12 @@ export default function App() {
             <Route path="/about"      element={<><PageMeta {...STATIC_PAGE_META["/about"]} /><AboutPage /></>} />
             <Route path="/terms"      element={<><PageMeta {...STATIC_PAGE_META["/terms"]} /><TermsPage /></>} />
             <Route path="/privacy"    element={<><PageMeta {...STATIC_PAGE_META["/privacy"]} /><PrivacyPage /></>} />
+
+            {/* Hodrac Host (hidden until launch) */}
+            {HOST_ENABLED && (
+              <Route path="/host" element={host(<><PageMeta title="Host with Hodrac" noindex
+                description="Sell seats on your group trips from one link: deposits, instalments and signed terms, paid straight to your bank." /><HostHomePage /></>)} />
+            )}
 
             <Route path="*" element={<><PageMeta title="Page not found" noindex /><NotFoundPage /></>} />
           </Route>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { createNewUserInfo } from "../../../../dataStore/user_info_apis";
+import { authApi } from "../../../../dataStore/v2Api/client";
 import { useAuth } from "../../../../hooks/v2Hooks/useAuth";
 
 interface EngagementPopupProps {
@@ -25,6 +25,7 @@ export default function EngagementPopup({ triggerAfterSeconds = 45 }: Engagement
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (isAuthenticated || alreadySeen()) return;
@@ -39,10 +40,14 @@ export default function EngagementPopup({ triggerAfterSeconds = 45 }: Engagement
     e.preventDefault();
     if (!email.includes("@")) return;
     setLoading(true);
+    setError("");
     try {
-      await createNewUserInfo(email);
+      // Same newsletter sign-up as the footer, on the configured backend.
+      await authApi.newsletter(email);
       setSubmitted(true);
       setTimeout(() => setVisible(false), 2200);
+    } catch {
+      setError("Couldn't sign you up just now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -99,6 +104,7 @@ export default function EngagementPopup({ triggerAfterSeconds = 45 }: Engagement
                     {loading ? "Joining…" : "Send me ideas"}
                   </button>
                 </form>
+                {error && <p role="alert" className="text-sm text-red-700 mt-3">{error}</p>}
               </>
             )}
           </div>

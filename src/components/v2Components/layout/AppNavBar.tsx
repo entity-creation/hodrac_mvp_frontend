@@ -13,6 +13,7 @@ import { buttonClasses } from "../ui";
 import NotificationBell from "./NotificationBell";
 import { CurrencyButton } from "./CountryPicker";
 import { useAdminStatus } from "../../../admin/useAdmin";
+import { HOST_ENABLED } from "../../../utils/v2Utils/host";
 
 const NAV_LINKS = [
   { label: "Wishlists", to: ROUTES.PUBLIC.EXPLOREWISHLIST, icon: Map },
@@ -85,6 +86,7 @@ export default function AppNavBar() {
     { label: "My wishlists", to: ROUTES.AUTH.MYWISHLIST, icon: Map },
     { label: "Saved", to: ROUTES.AUTH.SAVED, icon: Heart },
     { label: "Plan a trip", to: ROUTES.AUTH.CREATETRIPS, icon: PlusCircle },
+    ...(HOST_ENABLED ? [{ label: "Host trips", to: ROUTES.HOST.HOME, icon: Briefcase }] : []),
     { label: "Account settings", to: ROUTES.AUTH.ACCOUNT, icon: Settings },
     ...(isAdmin ? [{ label: "Admin dashboard", to: "/admin", icon: ShieldCheck }] : []),
   ];
