@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, BellRing, FileSignature, Landmark, Link2, ListChecks, Send } from "lucide-react";
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
-import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
+import { registerPath } from "../../../utils/v2Utils/authRedirect";
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { Button, FullPageSpinner } from "../../../components/v2Components/ui";
 import { ROUTES } from "../../../utils/v2Utils/routes";
@@ -38,8 +38,10 @@ export default function HostHomePage() {
 
 function HostLanding() {
   const navigate = useNavigate();
-  const requireAuth = useRequireAuth();
-  const start = () => requireAuth(() => navigate(ROUTES.HOST.ONBOARDING), ROUTES.HOST.ONBOARDING);
+  const { isAuthenticated } = useAuth();
+  // New hosts usually need an account, so signed-out visitors go to sign-up
+  // (which links to log in), then on to host setup.
+  const start = () => navigate(isAuthenticated ? ROUTES.HOST.ONBOARDING : registerPath(ROUTES.HOST.ONBOARDING));
 
   return (
     <div>
@@ -95,7 +97,7 @@ function HostLanding() {
           <div className="flex items-start gap-4">
             <ListChecks className="w-6 h-6 text-ink shrink-0 mt-1" strokeWidth={1.5} />
             <div>
-              <h2 className="text-2xl font-light text-ink">Set up in about 10 minutes</h2>
+              <h2 className="text-2xl font-light text-ink">Set up in about 5 minutes</h2>
               <p className="text-ink-soft mt-1">Your profile, your payout account, then a quick verification so travellers see the Verified host badge.</p>
             </div>
           </div>

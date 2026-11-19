@@ -19,6 +19,8 @@ const NAV_LINKS = [
   { label: "Wishlists", to: ROUTES.PUBLIC.EXPLOREWISHLIST, icon: Map },
   { label: "Destinations", to: ROUTES.PUBLIC.EXPLOREDESTINATION, icon: Compass },
   { label: "Trips", to: ROUTES.PUBLIC.BROWSETRIPS, icon: Users },
+  // Public, so signed-out visitors can find Hodrac Host too.
+  ...(HOST_ENABLED ? [{ label: "Host a trip", to: ROUTES.HOST.HOME, icon: Briefcase }] : []),
 ];
 
 const QUICK_SEARCHES = ["Japan for anime fans", "Couple trips", "Budget food tours", "Beach escapes"];
@@ -86,7 +88,6 @@ export default function AppNavBar() {
     { label: "My wishlists", to: ROUTES.AUTH.MYWISHLIST, icon: Map },
     { label: "Saved", to: ROUTES.AUTH.SAVED, icon: Heart },
     { label: "Plan a trip", to: ROUTES.AUTH.CREATETRIPS, icon: PlusCircle },
-    ...(HOST_ENABLED ? [{ label: "Host trips", to: ROUTES.HOST.HOME, icon: Briefcase }] : []),
     { label: "Account settings", to: ROUTES.AUTH.ACCOUNT, icon: Settings },
     ...(isAdmin ? [{ label: "Admin dashboard", to: "/admin", icon: ShieldCheck }] : []),
   ];

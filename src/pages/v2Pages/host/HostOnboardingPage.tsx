@@ -8,6 +8,7 @@ import { FormError, HostClosedBanner, HostField, VerifiedBadge } from "../../../
 import { inputClass } from "../../../components/v2Components/host/hostStyles";
 import { fieldErrors, formErrorText, trackHost } from "../../../utils/v2Utils/host";
 import { flyerHref } from "../../../utils/v2Utils/hostOffer";
+import { trackMeta } from "../../../utils/v2Utils/metaPixel";
 import { slugify } from "../../../utils/v2Utils/slugify";
 import { ROUTES } from "../../../utils/v2Utils/routes";
 import type { HostBank, HostProfile, PayoutAccountResult } from "../../../types/host";
@@ -137,7 +138,14 @@ function ProfileStep({ profile, onSaved }: { profile: HostProfile | null; onSave
     };
     setSaving(true);
     try {
-      const saved = profile ? await hostApi.updateProfile(body) : await hostApi.createProfile(body);
+      let saved: HostProfile;
+      if (profile) {
+        saved = await hostApi.updateProfile(body);
+      } else {
+        saved = await hostApi.createProfile(body);
+        // Meta Pixel conversion: a new host signed up (once; edits don't count).
+        trackMeta("CompleteRegistration", { content_name: "Hodrac Host", status: true });
+      }
       onSaved(saved);
     } catch (e) {
       setErrors(fieldErrors(e));

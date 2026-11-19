@@ -4,6 +4,7 @@ import { FaTiktok } from "react-icons/fa";
 import { ArrowRight, Briefcase } from "lucide-react";
 import { ROUTES } from "../../../../utils/v2Utils/routes";
 import { authApi } from "../../../../dataStore/v2Api/client";
+import { HOST_ENABLED } from "../../../../utils/v2Utils/host";
 
 const LINK_GROUPS = [
   {
@@ -19,6 +20,7 @@ const LINK_GROUPS = [
     links: [
       { label: "About", path: ROUTES.PUBLIC.ABOUT },
       { label: "Contact", path: ROUTES.PUBLIC.CONTACTUS },
+      ...(HOST_ENABLED ? [{ label: "Host trips", path: ROUTES.HOST.HOME }] : []),
       { label: "For business", path: ROUTES.PUBLIC.PARTNERS },
     ],
   },

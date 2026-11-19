@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ROUTES } from "../../../utils/v2Utils/routes";
 import LegalLayout, { List, Mail, Term, type LegalSection } from "./LegalLayout";
 
-const UPDATED = "30 October 2026";
+const UPDATED = "19 November 2026";
 
 const ext = "underline underline-offset-4 text-ink";
 
@@ -59,7 +59,7 @@ const sections: LegalSection[] = [
         <li>
           <Term>Usage and device data:</Term> how you move around and interact with pages, device and browser type,
           screen size, approximate location derived from your IP address, and pages visited. Much of this is collected
-          with Microsoft Clarity (see section 7).
+          with Microsoft Clarity and the Meta Pixel (see section 7).
         </li>
       </List>
 
@@ -99,6 +99,11 @@ const sections: LegalSection[] = [
         <li>
           <Term>To understand and improve Hodrac</Term>: analytics, session replays and aggregated audience insights.
           <em> Basis: our legitimate interest in improving the Service.</em>
+        </li>
+        <li>
+          <Term>To measure and improve our advertising</Term>: seeing which of our ads on Facebook and Instagram bring
+          people to Hodrac, and showing our ads to people likely to be interested. <em>Basis: our legitimate interest in
+          promoting Hodrac.</em>
         </li>
         <li>
           <Term>To email you</Term>: account emails (confirmation, password reset, security) and, if you opt in,
@@ -151,7 +156,8 @@ const sections: LegalSection[] = [
         </li>
         <li>
           <Term>Service providers</Term> who process data for us under contract, including hosting and databases
-          (e.g. Render), email delivery, Microsoft Clarity for analytics, and EmailJS for our contact form.
+          (e.g. Render), email delivery, Microsoft Clarity for analytics, Meta Platforms for advertising measurement
+          (the Meta Pixel), and EmailJS for our contact form.
         </li>
         <li>
           <Term>Authorities or others</Term> where required by law, or to protect the rights, property or safety of our
@@ -177,7 +183,7 @@ const sections: LegalSection[] = [
   },
   {
     id: "cookies",
-    title: "Cookies, local storage and Microsoft Clarity",
+    title: "Cookies, local storage, Microsoft Clarity and the Meta Pixel",
     body: <>
       <p><Term>Essential storage.</Term> We use your browser's local storage to keep you signed in (login tokens), and to
         remember settings such as your currency. Hodrac does not work properly without it.</p>
@@ -199,8 +205,20 @@ const sections: LegalSection[] = [
         <li><code>ANONCHK</code>, <code>SM</code>, <code>MR</code>: short-lived technical cookies set by Microsoft.</li>
       </List>
       <p>
+        <Term>Meta Pixel.</Term> We use the Meta Pixel, a tool from Meta Platforms (Facebook and Instagram), to measure
+        how well our ads work and to show our ads to people who may be interested in Hodrac. When you visit Hodrac, the
+        pixel tells Meta which pages you viewed, along with your browser and device details and IP address. If you are
+        signed in to Facebook or Instagram, Meta may link this to your account. We don't send Meta your name, email
+        address or what you type into forms. Meta uses this data as described in its{" "}
+        <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className={ext}>
+          Privacy Policy
+        </a>, and you can control the ads you see in your Facebook or Instagram ad preferences. The pixel sets the{" "}
+        <code>_fbp</code> cookie (up to 90 days) to recognise returning browsers, and <code>_fbc</code> when you arrive
+        from a Meta ad.
+      </p>
+      <p>
         You can block or delete these cookies in your browser settings, or use a privacy extension that blocks
-        analytics scripts. Hodrac will keep working if you do.
+        analytics and advertising scripts. Hodrac will keep working if you do.
       </p>
     </>,
   },
@@ -213,7 +231,7 @@ const sections: LegalSection[] = [
         <li>Messages already sent in shared trip threads may remain visible to other members, shown without your profile.</li>
         <li>Activity and partner click records: as long as needed for recommendations and partner reporting, then deleted or anonymised. Aggregated statistics that don't identify you may be kept.</li>
         <li>Booking links include a personal tracking token that expires after 7 days.</li>
-        <li>Clarity data is kept by Microsoft in line with Clarity's retention settings.</li>
+        <li>Clarity data is kept by Microsoft in line with Clarity's retention settings, and Meta Pixel data by Meta in line with its own policies.</li>
         <li>Some records may be kept longer where the law requires it or to resolve disputes.</li>
       </List>
     </>,
@@ -295,7 +313,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           In short: we use your quiz answers and activity to recommend trips that suit you. We don't sell your data. We
-          use Microsoft Clarity to understand how the site is used. Partners only get statistics that can't identify you.
+          use Microsoft Clarity to understand how the site is used, and the Meta Pixel to measure our ads on Facebook and
+          Instagram. Partners only get statistics that can't identify you.
         </p>
       </>}
       sections={sections}
