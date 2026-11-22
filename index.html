@@ -34,6 +34,26 @@
         y.parentNode.insertBefore(t, y);
       })(window, document, "clarity", "script", "wlx63ii072");
     </script>
+    <!-- Loading screen shown before the JavaScript arrives (React replaces
+         everything inside #root). Keep in step with PageSkeleton.tsx. -->
+    <style>
+      .boot-nav { max-width: 80rem; height: 64px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+      .boot-logo { font-family: "Fraunces", Georgia, serif; font-size: 24px; font-weight: 300; letter-spacing: -0.02em; color: #141414; }
+      .boot-main { max-width: 80rem; margin: 0 auto; padding: 16px 20px 64px; }
+      .boot-pill, .boot-block, .boot-line { background: #f4f4f5; animation: boot-pulse 1.4s ease-in-out infinite; }
+      .boot-pill { width: 96px; height: 40px; border-radius: 999px; }
+      .boot-block { border-radius: 24px; }
+      .boot-hero { height: min(52vh, 460px); margin-bottom: 32px; }
+      .boot-line { height: 16px; border-radius: 8px; margin-bottom: 12px; }
+      .boot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 32px; }
+      .boot-card { height: 280px; }
+      @media (min-width: 768px) { .boot-nav { padding: 0 32px; } }
+      @keyframes boot-pulse { 50% { opacity: 0.55; } }
+      @media (prefers-reduced-motion: reduce) { .boot-pill, .boot-block, .boot-line { animation: none; } }
+      /* Page text for crawlers and link previews (added at build time): in the
+         HTML, not on screen. */
+      .boot-seo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    </style>
     <!-- Meta Pixel: live site only (not localhost or Vercel previews), and not
          the admin. Later page changes are tracked in src/utils/v2Utils/metaPixel.ts. -->
     <script>
@@ -54,7 +74,19 @@
   <body>
     <noscript><img height="1" width="1" style="display:none" alt=""
       src="https://www.facebook.com/tr?id=4750500495180080&ev=PageView&noscript=1" /></noscript>
-    <div id="root"></div>
+    <div id="root"><div class="boot" aria-hidden="true">
+      <div class="boot-nav"><span class="boot-logo">Hodrac</span><span class="boot-pill"></span></div>
+      <div class="boot-main">
+        <div class="boot-block boot-hero"></div>
+        <div class="boot-line" style="width: 40%"></div>
+        <div class="boot-line" style="width: 65%"></div>
+        <div class="boot-grid">
+          <div class="boot-block boot-card"></div>
+          <div class="boot-block boot-card"></div>
+          <div class="boot-block boot-card"></div>
+        </div>
+      </div>
+    </div><div class="boot-seo" id="boot-seo"></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -15,6 +15,7 @@ export const STATIC_ROUTES = [
   "/partners",
   "/about",
   "/contact-us",
+  "/blog",
   "/terms",
   "/privacy",
 ];
@@ -94,11 +95,16 @@ export function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-export function sitemapXml(routes: string[]): string {
+// lastmod (ISO date-time) is optional; blog posts send their updatedAt.
+export function sitemapXml(routes: (string | { route: string; lastmod?: string })[]): string {
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    routes.map(route => `  <url>\n    <loc>${escapeXml(SITE_URL + route)}</loc>\n  </url>`).join("\n") +
+    routes.map(r => {
+      const { route, lastmod } = typeof r === "string" ? { route: r, lastmod: undefined } : r;
+      return `  <url>\n    <loc>${escapeXml(SITE_URL + route)}</loc>\n` +
+        (lastmod ? `    <lastmod>${escapeXml(lastmod)}</lastmod>\n` : "") + `  </url>`;
+    }).join("\n") +
     `\n</urlset>\n`
   );
 }

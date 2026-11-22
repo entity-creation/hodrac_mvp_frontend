@@ -12,6 +12,7 @@ import {
 import { WishlistCardComponent } from "../../../components/v2Components/cards/Cards";
 import { PartnerBadge, PartnerBookingButton } from "../../../components/v2Components/partner/Partner";
 import TripsForPlace from "../../../components/v2Components/tripPost/TripsForPlace";
+import { RelatedPosts } from "../../../components/v2Components/blog/BlogCards";
 import { wishlistsApi } from "../../../dataStore/v2Api/client";
 import { createTripForPlacePath, destinationPath } from "../../../utils/v2Utils/routes";
 import { metaDescription, useCanonicalRedirect, usePageMeta } from "../../../utils/v2Utils/seo";
@@ -265,6 +266,9 @@ export default function DestinationDetailPage() {
 
           {/* Who's going */}
           <TripsForPlace destinationId={dest.destinationId} placeName={dest.destinationName} />
+
+          {/* Blog posts about this place */}
+          <RelatedPosts posts={dest.relatedPosts} />
 
           {/* Wishlists featuring this destination */}
           <div>

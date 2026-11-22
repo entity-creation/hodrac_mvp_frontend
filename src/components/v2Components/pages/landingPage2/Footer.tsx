@@ -13,6 +13,7 @@ const LINK_GROUPS = [
       { label: "Wishlists", path: ROUTES.PUBLIC.EXPLOREWISHLIST },
       { label: "Destinations", path: ROUTES.PUBLIC.EXPLOREDESTINATION },
       { label: "Trips with others", path: ROUTES.PUBLIC.BROWSETRIPS },
+      { label: "Travel guides", path: ROUTES.PUBLIC.BLOG },
     ],
   },
   {

@@ -16,6 +16,7 @@ export const ROUTES = {
         PARTNERS: "/partners",
         TERMS: "/terms",
         PRIVACY: "/privacy",
+        BLOG: "/blog",
     },
     AUTH: {
         SAVED: "/saved",
@@ -42,6 +43,11 @@ export const tripPayPath = (tripId: string) => `/trips/${tripId}/pay`;
 export const hostManifestPath = (tripId: string) => `/host/trips/${tripId}`;
 export const hostEditTripPath = (tripId: string) => `/host/trips/${tripId}/edit`;
 export const receiptPath = (reference: string) => `/payments/${encodeURIComponent(reference)}`;
+
+// Blog. Posts are /blog/<slug>; "tags" and "sitemap" can never be slugs, and
+// tag pages live one level deeper so they can't clash with a post.
+export const blogPath = (slug: string) => `/blog/${slug}`;
+export const blogTagPath = (key: string) => `/blog/tag/${encodeURIComponent(key)}`;
 
 // Deep links used across the app.
 // Canonical detail URLs: always include the slug so each item has one URL.

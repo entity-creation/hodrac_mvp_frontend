@@ -37,16 +37,20 @@ export interface PageMeta {
   path?: string;
   image?: string | null;
   noindex?: boolean;
+  // Absolute canonical URL (e.g. a blog post republished from elsewhere). Wins over path.
+  canonicalUrl?: string | null;
+  // Use the title as is, without " · Hodrac" (an SEO title set by an editor).
+  exactTitle?: boolean;
 }
 
 // Sets title, description, canonical, Open Graph and robots tags for a page.
-export function usePageMeta({ title, description, path, image, noindex }: PageMeta) {
+export function usePageMeta({ title, description, path, image, noindex, canonicalUrl, exactTitle }: PageMeta) {
   const { pathname } = useLocation();
-  const canonical = SITE_URL + ((path ?? pathname).replace(/\/+$/, "") || "/");
+  const canonical = canonicalUrl || SITE_URL + ((path ?? pathname).replace(/\/+$/, "") || "/");
   const desc = description?.trim() || DEFAULT_DESCRIPTION;
 
   useEffect(() => {
-    document.title = fullTitle(title);
+    document.title = exactTitle && title ? title : fullTitle(title);
     setMeta("name", "description", desc);
     setMeta("property", "og:title", title || HOME_TITLE);
     setMeta("property", "og:description", desc);
@@ -61,7 +65,7 @@ export function usePageMeta({ title, description, path, image, noindex }: PageMe
     });
     if (noindex) link.remove();
     else link.href = canonical;
-  }, [title, desc, canonical, image, noindex]);
+  }, [title, desc, canonical, image, noindex, exactTitle]);
 }
 
 // Replaces the URL with the canonical path (e.g. adds a missing or fixes a

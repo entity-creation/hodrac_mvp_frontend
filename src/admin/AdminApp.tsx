@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import {
   LayoutDashboard, Users, Plane, Handshake, Inbox, Mail, MapPin, Tags, Globe,
-  Map, Star, Sparkles, BadgeCheck, ArrowLeft, ShieldAlert, PieChart, Briefcase, Wallet, LineChart, type LucideIcon,
+  Map, Star, Sparkles, BadgeCheck, ArrowLeft, Newspaper, ShieldAlert, PieChart, Briefcase, Wallet, LineChart, type LucideIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAdminStatus, clearAdminCache, type AdminCheck } from "./useAdmin";
@@ -26,6 +26,8 @@ import PlacesPage from "./pages/PlacesPage";
 import HostsPage from "./pages/HostsPage";
 import HostPaymentsPage from "./pages/HostPaymentsPage";
 import HostingInsightsPage from "./pages/HostingInsightsPage";
+import BlogPostsPage from "./pages/BlogPostsPage";
+import BlogEditorPage from "./pages/BlogEditorPage";
 import { HOST_ENABLED } from "../utils/v2Utils/host";
 
 // Admin dashboard at /admin. Lazy-loaded from vzApp/App.tsx (its own bundle)
@@ -81,6 +83,7 @@ const ADMIN_SECTIONS: { group: string; items: AdminNavItem[] }[] = [
       { to: "/admin/featured-destinations", label: "Featured destinations", icon: Sparkles },
       { to: "/admin/featured", label: "Featured wishlists", icon: Star },
       { to: "/admin/creators", label: "Creators", icon: BadgeCheck },
+      { to: "/admin/blog", label: "Blog", icon: Newspaper },
     ],
   },
   {
@@ -248,6 +251,9 @@ export default function AdminApp() {
         <Route path="creators" element={<CreatorsPage />} />
         <Route path="taxonomy" element={<TaxonomyPage />} />
         <Route path="places" element={<PlacesPage />} />
+        <Route path="blog" element={<BlogPostsPage />} />
+        <Route path="blog/new" element={<BlogEditorPage />} />
+        <Route path="blog/:id" element={<BlogEditorPage />} />
         {HOST_ENABLED && <Route path="hosts" element={<HostsPage />} />}
         {HOST_ENABLED && <Route path="hosts/:id" element={<HostsPage />} />}
         {HOST_ENABLED && <Route path="payments" element={<HostPaymentsPage />} />}

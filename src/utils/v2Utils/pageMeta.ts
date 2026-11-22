@@ -30,6 +30,10 @@ export const STATIC_PAGE_META = {
     title: "About",
     description: "Hodrac makes travel easier, smarter and more enjoyable for anyone who wants to explore the world.",
   },
+  "/blog": {
+    title: "Travel guides and local tips",
+    description: "Where to go, what to do and how to plan it: travel guides, city tips and itinerary ideas from Hodrac.",
+  },
   "/terms": {
     title: "Terms of Service",
     description: "The terms for using Hodrac, operated by Ionva Limited.",

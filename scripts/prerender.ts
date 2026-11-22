@@ -5,18 +5,26 @@
 //   dist/index.html                       home page
 //   dist/explore/wishlists.html           links to every wishlist
 //   dist/wishlists/<id>/<slug>.html       one per wishlist (and destination)
+//   dist/blog.html, dist/blog/<slug>.html, dist/blog/tag/<key>.html
 //   dist/sitemap.xml
 //
-// The app's createRoot() replaces the static #root content when it loads.
+// The page text goes in a visually hidden block next to index.html's loading
+// screen; the app's createRoot() replaces both when it loads.
 // If the backend can't be reached, only app.html is written and the site
 // deploys as a plain SPA — this script never fails the build.
 
 import * as fs from "fs";
 import * as path from "path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   API_BASE_URL, SITE_URL, STATIC_ROUTES, escapeXml as esc, fetchAll, getJson, mapLimit, sitemapXml,
 } from "./backend";
-import { destinationPath, wishlistPath } from "../src/utils/v2Utils/routes";
+import { blogPath, blogTagPath, destinationPath, wishlistPath } from "../src/utils/v2Utils/routes";
+import { stripBlogMarkers } from "../src/utils/v2Utils/blogMarkdown";
+import type { BlogPaged, BlogPost, BlogPostSummary, BlogSitemapEntry, BlogTagCount } from "../src/types/blog";
 import {
   DEFAULT_DESCRIPTION, STATIC_PAGE_META, destinationFallbackDescription, fullTitle, type StaticPagePath,
 } from "../src/utils/v2Utils/pageMeta";
@@ -32,6 +40,8 @@ interface Page {
   image?: string | null;
   jsonLd?: object;
   body: string;
+  canonical?: string | null; // absolute; defaults to this page's URL
+  lastmod?: string | null;   // sitemap <lastmod>
 }
 
 // ─── HTML ─────────────────────────────────────────────────────────────────────
@@ -50,7 +60,7 @@ const para = (text?: string | null) => (text?.trim() ? `<p>${esc(text.trim())}</
 const NAV = `<nav>${link("/", "Hodrac")} · ${link("/explore/wishlists", "Itineraries")} · ${link("/explore/destinations", "Destinations")} · ${link("/browse-trip", "Travel buddies")}</nav>`;
 
 function render(template: string, page: Page): string {
-  const canonical = SITE_URL + (page.route === "/" ? "/" : page.route);
+  const canonical = page.canonical || SITE_URL + (page.route === "/" ? "/" : page.route);
   const title = page.title;
   const description = clip(page.description) ?? DEFAULT_DESCRIPTION;
   const head = [
@@ -69,9 +79,10 @@ function render(template: string, page: Page): string {
     .replace(/<meta\s+name="description"[\s\S]*?\/>/, `<meta name="description" content="${esc(description)}" />`)
     .replace(/<meta\s+property="og:(title|description)"[\s\S]*?\/>\s*/g, "")
     .replace("</head>", `  ${head}\n  </head>`)
+    // Next to the loading screen, hidden from view (see .boot-seo in index.html).
     .replace(
-      '<div id="root"></div>',
-      `<div id="root"><div style="max-width:48rem;margin:0 auto;padding:6rem 1.25rem 4rem">${NAV}<main>${page.body}</main></div></div>`
+      '<div class="boot-seo" id="boot-seo"></div>',
+      `<div class="boot-seo" id="boot-seo">${NAV}<main>${page.body}</main></div>`
     );
 }
 
@@ -182,6 +193,87 @@ function destinationPage(d: DestinationSummary, detail: DestinationDetail | null
   };
 }
 
+// ─── Blog ─────────────────────────────────────────────────────────────────────
+
+// Same Markdown as the page (no raw HTML), card markers removed.
+const markdownHtml = (md: string) =>
+  renderToStaticMarkup(createElement(ReactMarkdown, { remarkPlugins: [remarkGfm] }, stripBlogMarkers(md)));
+
+const postLink = (p: BlogPostSummary) => link(blogPath(p.slug), p.title);
+
+function blogPostPage(p: BlogPost): Page {
+  const customTitle = p.metaTitle && p.metaTitle !== p.title;
+  const linked = [
+    ...p.wishlists.map(w => link(wishlistPath(w.id, w.name), w.name)),
+    ...p.destinations.map(d => link(destinationPath(d.id, d.name), d.name)),
+    ...p.events.map(e => esc(`${e.name}, ${e.city}`)),
+  ];
+  return {
+    route: blogPath(p.slug),
+    title: customTitle ? p.metaTitle : fullTitle(p.title),
+    description: p.metaDescription || p.excerpt,
+    image: p.coverImageUrl,
+    canonical: p.canonicalUrl,
+    lastmod: p.updatedAt,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: p.title,
+      description: clip(p.metaDescription || p.excerpt, 300),
+      image: p.coverImageUrl || undefined,
+      datePublished: p.publishedAt || undefined,
+      dateModified: p.updatedAt,
+      author: { "@type": p.authorName && p.authorName !== "Hodrac Team" ? "Person" : "Organization", name: p.authorName || "Hodrac" },
+      publisher: { "@type": "Organization", name: "Hodrac", url: SITE_URL },
+      mainEntityOfPage: SITE_URL + blogPath(p.slug),
+      keywords: p.tags.map(t => t.name).join(", ") || undefined,
+    },
+    body:
+      `<article><h1>${esc(p.title)}</h1>` +
+      para(p.excerpt) +
+      `<p>${[p.authorName, p.publishedAt?.slice(0, 10)].filter(Boolean).map(s => esc(String(s))).join(" · ")}</p>` +
+      markdownHtml(p.bodyMarkdown) +
+      section(p.wishlists.length ? "Book this trip" : "Places in this post", list(linked)) +
+      section("Topics", list(p.tags.map(t => link(blogTagPath(t.key), t.name)))) +
+      section("Keep reading", list(p.relatedPosts.map(postLink))) +
+      `</article>`,
+  };
+}
+
+function blogListPage(route: string, title: string, description: string, posts: BlogPostSummary[], tags: BlogTagCount[]): Page {
+  return {
+    route,
+    title: fullTitle(title),
+    description,
+    body:
+      `<h1>${esc(title)}</h1>` + para(description) +
+      list(posts.map(p => `${postLink(p)}${p.excerpt ? ` — ${esc(p.excerpt)}` : ""}`)) +
+      section("Topics", list(tags.map(t => link(blogTagPath(t.key), t.name)))),
+  };
+}
+
+async function blogPages(): Promise<Page[]> {
+  const entries = await tryGet<BlogSitemapEntry[]>("/api/blog/sitemap");
+  if (!entries) return [];
+  const tags = ((await tryGet<BlogTagCount[]>("/api/blog/tags")) ?? []).filter(t => t.postCount > 0);
+  const posts = (await mapLimit(entries, CONCURRENCY, e => tryGet<BlogPost>(`/api/blog/${encodeURIComponent(e.slug)}`)))
+    .filter((p): p is BlogPost => !!p);
+  const byDate = [...posts].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
+
+  const tagPages = await mapLimit(tags, CONCURRENCY, async t => {
+    const page = await tryGet<BlogPaged<BlogPostSummary>>(`/api/blog?tag=${encodeURIComponent(t.key)}&pageSize=50`);
+    return blogListPage(blogTagPath(t.key), `${t.name} · Travel guides`,
+      `Hodrac articles about ${t.name.toLowerCase()}: local guides, things to do and trip ideas.`, page?.items ?? [], tags);
+  });
+
+  const meta = STATIC_PAGE_META["/blog"];
+  return [
+    { ...blogListPage("/blog", meta.title, meta.description, byDate, tags), lastmod: byDate[0]?.updatedAt },
+    ...tagPages,
+    ...posts.map(blogPostPage),
+  ];
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -251,14 +343,20 @@ async function main() {
     ...wishlistData.map(x => wishlistPage(x.w, x.detail, x.stops)),
     ...destinationData.map(x => destinationPage(x.d, x.detail, wishlistsFor.get(x.d.destinationId) ?? [])),
   ];
+  // Blog (skipped quietly if the blog API isn't there yet).
+  const blog = await blogPages();
+  pages.push(...blog);
 
   for (const page of pages) write(page.route, render(template, page));
 
-  const routes = [...new Set([...STATIC_ROUTES, ...pages.map(p => p.route)])];
-  fs.writeFileSync(path.join(DIST, "sitemap.xml"), sitemapXml(routes));
+  // Posts with their own canonical elsewhere stay out of the sitemap.
+  const lastmod = new Map(pages.map(p => [p.route, p.lastmod ?? undefined]));
+  const routes = [...new Set([...STATIC_ROUTES, ...pages.filter(p => !p.canonical).map(p => p.route)])];
+  fs.writeFileSync(path.join(DIST, "sitemap.xml"), sitemapXml(routes.map(route => ({ route, lastmod: lastmod.get(route) }))));
 
   console.log(
-    `Prerendered ${pages.length} pages (${wishlists.length} wishlists, ${destinations.length} destinations); ` +
+    `Prerendered ${pages.length} pages (${wishlists.length} wishlists, ${destinations.length} destinations, ` +
+    `${blog.filter(p => p.route.split("/").length === 3 && !p.route.startsWith("/blog/tag")).length} blog posts); ` +
     `sitemap has ${routes.length} URLs.`
   );
 }

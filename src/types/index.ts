@@ -128,6 +128,7 @@ export interface DestinationDetail extends DestinationSummary {
   currencies: string[];
   cities: string[];
   images: DestinationImage[];
+  relatedPosts?: BlogPostSummary[]; // up to 3 blog posts
 }
 
 // ─── Wishlists ────────────────────────────────────────────────────────────────
@@ -221,6 +222,7 @@ export interface WishlistDetail extends WishlistCard {
    * if another collaborator saved between your GET and your PUT.
    */
   xmin: number;
+  relatedPosts?: BlogPostSummary[]; // blog posts about this wishlist
 }
 
 // ─── Creator attribution ──────────────────────────────────────────────────────
@@ -380,6 +382,7 @@ export interface WishlistFilters {
 // and the Models — keep these in sync if the C# side changes shape.
 
 import type { FeeMode, InterestPaymentStatus, Kobo, MyNextPayment, TripHost, TripInstalment } from "./host";
+import type { BlogPostSummary } from "./blog";
 
 export type TripPostStatus = "Open" | "Closed" | "Cancelled";
 

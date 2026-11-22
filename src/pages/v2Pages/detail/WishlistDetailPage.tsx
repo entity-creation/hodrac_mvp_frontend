@@ -13,6 +13,7 @@ import {
 import { WishlistCardComponent, DestinationCardComponent } from "../../../components/v2Components/cards/Cards";
 import { PartnerBadge, PartnerBookingButton } from "../../../components/v2Components/partner/Partner";
 import TripsForPlace from "../../../components/v2Components/tripPost/TripsForPlace";
+import { RelatedPosts } from "../../../components/v2Components/blog/BlogCards";
 import type { ItineraryDay, ItineraryItem, WishlistCreatorAttributionDto } from "../../../types";
 import { useWishlistSignalR } from "../../../hooks/v2Hooks/useSignalR";
 import { colourwayFor } from "../../../utils/v2Utils/format";
@@ -382,6 +383,9 @@ export default function WishlistDetailPage() {
 
             {/* Trips to this wishlist */}
             <TripsForPlace wishlistId={wishlist.wishlistId} placeName={wishlist.wishlistName} />
+
+            {/* Blog posts about this trip */}
+            <RelatedPosts posts={wishlist.relatedPosts} />
 
             {/* Destinations */}
             <div>

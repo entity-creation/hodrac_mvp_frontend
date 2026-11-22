@@ -18,55 +18,68 @@ const ReceiptsPage       = lazy(() => import("../pages/v2Pages/host/ReceiptsPage
 const HostTripsPage      = lazy(() => import("../pages/v2Pages/host/HostTripsPage"));
 const HostManifestPage   = lazy(() => import("../pages/v2Pages/host/HostManifestPage"));
 const HostReportsPage    = lazy(() => import("../pages/v2Pages/host/HostReportsPage"));
-const host = (page: React.ReactNode) => <Suspense fallback={<FullPageSpinner />}>{page}</Suspense>;
+const host = (page: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{page}</Suspense>;
 
 // Layout
 import AppNavBar from "../components/v2Components/layout/AppNavBar";
 import Footer from "../components/v2Components/pages/landingPage2/Footer";
+import PageSkeleton from "../components/v2Components/layout/PageSkeleton";
 import RequireAuth from "../components/v2Components/auth/RequireAuth";
 import PageMeta from "../components/v2Components/seo/PageMeta";
 import { HOST_ENABLED } from "../utils/v2Utils/host";
 import { STATIC_PAGE_META } from "../utils/v2Utils/pageMeta";
 import { ButtonLink, FullPageSpinner } from "../components/v2Components/ui";
 
-// Landing
+// Landing: in the main bundle, since most visits start here.
 import LandingPage from "../pages/v2Pages/landingPage/LandingPage";
 
+// Every other page is its own chunk, downloaded the first time it's opened
+// (the Suspense in AppLayout shows PageSkeleton meanwhile).
+
 // Explore
-import ExploreWishlistsPage    from "../pages/v2Pages/explore/ExploreWishlistsPage";
-import ExploreDestinationsPage from "../pages/v2Pages/explore/ExploreDestinationsPage";
+const ExploreWishlistsPage    = lazy(() => import("../pages/v2Pages/explore/ExploreWishlistsPage"));
+const ExploreDestinationsPage = lazy(() => import("../pages/v2Pages/explore/ExploreDestinationsPage"));
 
 // Detail
-import WishlistDetailPage    from "../pages/v2Pages/detail/WishlistDetailPage";
-import DestinationDetailPage from "../pages/v2Pages/detail/DestinationDetailPage";
+const WishlistDetailPage    = lazy(() => import("../pages/v2Pages/detail/WishlistDetailPage"));
+const DestinationDetailPage = lazy(() => import("../pages/v2Pages/detail/DestinationDetailPage"));
 
 // User
-import SavedPage         from "../pages/v2Pages/user/SavedPage";
-import MyWishlistsPage   from "../pages/v2Pages/user/MyWishlistsPage";
-import EditWishlistPage  from "../pages/v2Pages/user/EditWishlistPage";
-import CollaboratePage   from "../pages/v2Pages/user/CollaboratePage";
+const SavedPage        = lazy(() => import("../pages/v2Pages/user/SavedPage"));
+const MyWishlistsPage  = lazy(() => import("../pages/v2Pages/user/MyWishlistsPage"));
+const EditWishlistPage = lazy(() => import("../pages/v2Pages/user/EditWishlistPage"));
+const CollaboratePage  = lazy(() => import("../pages/v2Pages/user/CollaboratePage"));
+const AccountPage      = lazy(() => import("../pages/v2Pages/user/AccountPage"));
 
 // Search
-import SearchResultsPage from "../pages/v2Pages/search/SearchResultsPage";
+const SearchResultsPage = lazy(() => import("../pages/v2Pages/search/SearchResultsPage"));
 
-// Auth
-import { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, ConfirmEmailPage } from "../pages/v2Pages/auth/AuthPages";
-import AccountPage from "../pages/v2Pages/user/AccountPage";
+// Auth (one chunk for all of them)
+const authPages = () => import("../pages/v2Pages/auth/AuthPages");
+const LoginPage          = lazy(() => authPages().then(m => ({ default: m.LoginPage })));
+const RegisterPage       = lazy(() => authPages().then(m => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => authPages().then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage  = lazy(() => authPages().then(m => ({ default: m.ResetPasswordPage })));
+const ConfirmEmailPage   = lazy(() => authPages().then(m => ({ default: m.ConfirmEmailPage })));
 
 // Trips
-import BrowseTripPage     from "../pages/v2Pages/trip/BrowseTripPage";
-import CreateTripPage     from "../pages/v2Pages/trip/CreateTripPage";
-import TripThreadChatPage from "../pages/v2Pages/trip/TripThreadChatPage";
-import TripHubPage        from "../pages/v2Pages/trip/TripHubPage";
-import TripPage           from "../pages/v2Pages/trip/TripPage";
-import SharedWishlistPage from "../pages/v2Pages/shared/SharedWishlistPage";
+const BrowseTripPage     = lazy(() => import("../pages/v2Pages/trip/BrowseTripPage"));
+const CreateTripPage     = lazy(() => import("../pages/v2Pages/trip/CreateTripPage"));
+const TripThreadChatPage = lazy(() => import("../pages/v2Pages/trip/TripThreadChatPage"));
+const TripHubPage        = lazy(() => import("../pages/v2Pages/trip/TripHubPage"));
+const TripPage           = lazy(() => import("../pages/v2Pages/trip/TripPage"));
+const SharedWishlistPage = lazy(() => import("../pages/v2Pages/shared/SharedWishlistPage"));
+
+// Blog
+const BlogListPage = lazy(() => import("../pages/v2Pages/blog/BlogListPage"));
+const BlogPostPage = lazy(() => import("../pages/v2Pages/blog/BlogPostPage"));
 
 // Business & info
-import PartnersPage  from "../pages/v2Pages/partners/PartnersPage";
-import ContactUsPage from "../pages/contact_us_page";
-import AboutPage     from "../pages/about_page";
-import TermsPage     from "../pages/v2Pages/legal/TermsPage";
-import PrivacyPage   from "../pages/v2Pages/legal/PrivacyPage";
+const PartnersPage  = lazy(() => import("../pages/v2Pages/partners/PartnersPage"));
+const ContactUsPage = lazy(() => import("../pages/contact_us_page"));
+const AboutPage     = lazy(() => import("../pages/about_page"));
+const TermsPage     = lazy(() => import("../pages/v2Pages/legal/TermsPage"));
+const PrivacyPage   = lazy(() => import("../pages/v2Pages/legal/PrivacyPage"));
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
 
@@ -79,7 +92,9 @@ function AppLayout() {
     <div className="min-h-screen flex flex-col overflow-x-clip">
       <AppNavBar />
       <main className={`flex-1 ${isLanding ? "" : "pt-16"}`}>
-        <Outlet />
+        <Suspense fallback={<PageSkeleton />}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
     </div>
@@ -170,6 +185,11 @@ export default function App() {
             <Route path="/reset-password"       element={<><PageMeta title="Reset password" noindex /><ResetPasswordPage /></>} />
             <Route path="/confirm-email"        element={<><PageMeta title="Confirm email" noindex /><ConfirmEmailPage /></>} />
             <Route path="/auth/reset-password"  element={<><PageMeta title="Reset password" noindex /><ResetPasswordPage /></>} />
+
+            {/* Blog: pages set their own meta */}
+            <Route path="/blog"           element={<BlogListPage />} />
+            <Route path="/blog/tag/:tag"  element={<BlogListPage />} />
+            <Route path="/blog/:slug"     element={<BlogPostPage />} />
 
             {/* Business & info */}
             <Route path="/partners"   element={<><PageMeta {...STATIC_PAGE_META["/partners"]} /><PartnersPage /></>} />
