@@ -11,6 +11,7 @@ import {
 import { useAction, useDebounced, useQuery } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber, fromLocalInput } from "../format";
 
+import Img from "../../components/v2Components/ui/Img";
 type StatusFilter = (typeof USER_STATUS_FILTERS)[number];
 type Sort = (typeof USER_SORTS)[number];
 
@@ -37,7 +38,7 @@ function StatusPills({ u }: { u: AdminUserRow }) {
 function Avatar({ u }: { u: Pick<AdminUserRow, "avatarUrl" | "displayName" | "email"> }) {
   const initial = (u.displayName || u.email || "?").trim().charAt(0).toUpperCase();
   return u.avatarUrl ? (
-    <img src={u.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-line shrink-0" />
+    <Img src={u.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-line shrink-0" />
   ) : (
     <span className="w-8 h-8 rounded-full bg-cream-deep border border-line flex items-center justify-center text-xs text-ink-soft shrink-0">
       {initial}

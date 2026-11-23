@@ -1,6 +1,7 @@
 import { motion, type Variants } from "framer-motion";
 import Footer from "../components/v2Components/pages/landingPage2/Footer";
 
+import Img from "../components/v2Components/ui/Img";
 // Animation Variants
 const fadeIn: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -146,7 +147,7 @@ function Section({ title, text, image, reverse }: { title: string; text: string;
       </motion.div>
 
       <motion.div variants={fadeIn}>
-        <img src={image} alt={title} className="rounded-3xl h-80 md:h-125 w-full object-cover shadow-2xl" />
+        <Img src={image} alt={title} className="rounded-3xl h-80 md:h-125 w-full object-cover shadow-2xl" />
       </motion.div>
     </motion.div>
   );

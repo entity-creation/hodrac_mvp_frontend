@@ -11,6 +11,7 @@ import { SITE_URL } from "../../../utils/v2Utils/seo";
 import { DestinationCardInline, EventCardInline, WishlistCardInline } from "./BlogCards";
 import type { BlogEmbed } from "../../../types/blog";
 
+import Img from "../ui/Img";
 function EmbedCard({ slot }: { slot: EmbedSlot }) {
   if (slot.kind === "pending") {
     return (
@@ -66,7 +67,7 @@ export default function BlogMarkdown({ body, embeds, preview = false }: {
     li: ({ children }) => <li className="leading-[1.8] pl-1">{children}</li>,
     blockquote: ({ children }) => <blockquote className="my-8 border-l-2 border-ink pl-5 font-display text-xl italic text-ink">{children}</blockquote>,
     img: ({ src, alt }) => (
-      <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} loading="lazy" className="my-8 w-full rounded-2xl" />
+      <Img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} loading="lazy" className="my-8 w-full rounded-2xl" />
     ),
     hr: () => <hr className="my-12 border-line" />,
     strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,

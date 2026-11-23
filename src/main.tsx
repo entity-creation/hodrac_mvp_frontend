@@ -5,6 +5,10 @@ import "./index.css";
 import App from "./vzApp/App.tsx";
 import ScrollToTop from "./scroll_to_top.tsx";
 import { MetaPixelPageViews } from "./utils/v2Utils/metaPixel";
+import { loadImageConfig } from "./utils/v2Utils/imageHosts";
+
+// Image hosts for the R2 → Vercel fallback; ready before most images could fail.
+void loadImageConfig();
 
 // After a deploy, a tab opened on the old version asks for page chunks that no
 // longer exist. Reload once to pick up the new version (at most once a minute,

@@ -8,6 +8,7 @@ import { buttonClasses } from "../../ui";
 import { ROUTES, wishlistPath } from "../../../../utils/v2Utils/routes";
 import type { WishlistCard } from "../../../../types";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
+import { useImageFallback } from "../../../../hooks/v2Hooks/useImageFallback";
 
 const FALLBACK_SEARCHES = ["Japan", "Amalfi Coast", "Bali", "Lisbon", "Iceland"];
 
@@ -46,6 +47,8 @@ export default function HeroSection() {
   };
 
   const returning = (personalization?.interests?.length ?? 0) > 0;
+  // R2 → Vercel retry for the background photo (motion.img can't use <Img>).
+  const heroImg = useImageFallback(feature?.wishlistHeroImage);
 
   return (
     <section className="px-3 md:px-5 pt-20 pb-6">
@@ -56,7 +59,8 @@ export default function HeroSection() {
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.4 }}
-            src={feature.wishlistHeroImage}
+            src={heroImg.src}
+            onError={heroImg.onError}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />

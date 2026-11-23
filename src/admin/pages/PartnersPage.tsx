@@ -12,6 +12,7 @@ import {
 import { useAction, useDebounced, useQuery, useToast } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber, fromLocalInput, toLocalInput } from "../format";
 
+import Img from "../../components/v2Components/ui/Img";
 // ─── Shared helpers (exported for reuse by other admin pages) ─────────────────
 
 export interface PickedRef { id: string; label: string; sub?: string | null }
@@ -209,7 +210,7 @@ function ActivePill({ active }: { active: boolean }) {
 
 function Logo({ url, name }: { url: string | null; name: string }) {
   return url ? (
-    <img src={url} alt="" className="w-8 h-8 rounded-lg object-contain border border-line bg-white shrink-0" />
+    <Img src={url} alt="" className="w-8 h-8 rounded-lg object-contain border border-line bg-white shrink-0" />
   ) : (
     <div className="w-8 h-8 rounded-lg border border-line bg-cream-deep flex items-center justify-center text-xs text-ink-soft shrink-0">
       {name.slice(0, 1).toUpperCase()}

@@ -22,6 +22,7 @@ import ShareButton from "../../../components/v2Components/share/ShareButton";
 import { wishlistPath } from "../../../utils/v2Utils/routes";
 import { metaDescription, useCanonicalRedirect, usePageMeta } from "../../../utils/v2Utils/seo";
 
+import Img from "../../../components/v2Components/ui/Img";
 const PLATFORM_ICONS: Record<string, string> = {
   YouTube: "▶",
   Instagram: "📷",
@@ -40,7 +41,7 @@ function CreatorAttributionCard({ attribution }: { attribution: WishlistCreatorA
   return (
     <div className="flex items-start gap-4 p-4 bg-white border border-line rounded-3xl shadow-pop-sm">
       {creator.avatarUrl ? (
-        <img src={creator.avatarUrl} alt={creator.displayName} className="w-12 h-12 rounded-full object-cover shrink-0 border border-line" />
+        <Img src={creator.avatarUrl} alt={creator.displayName} className="w-12 h-12 rounded-full object-cover shrink-0 border border-line" />
       ) : (
         <div className="w-12 h-12 rounded-full bg-grape-500 border border-line flex items-center justify-center text-lg font-semibold text-white shrink-0">
           {creator.displayName.charAt(0).toUpperCase()}
@@ -103,7 +104,7 @@ function ItineraryItemRow({ item }: { item: ItineraryItem }) {
         {/* No lazy-loading: day panels open with a height animation from 0,
             which can stop lazy images from ever being fetched. */}
         {item.imageUrl && !imgFailed ? (
-          <img
+          <Img
             src={item.imageUrl}
             alt={item.title}
             onError={() => setImgFailed(true)}
@@ -262,7 +263,7 @@ export default function WishlistDetailPage() {
 
         <div className={`relative aspect-16/9 md:aspect-21/9 rounded-2xl overflow-hidden ${colour.bg}`}>
           {wishlist.wishlistHeroImage ? (
-            <img src={wishlist.wishlistHeroImage} alt={wishlist.wishlistName} className="w-full h-full object-cover" />
+            <Img src={wishlist.wishlistHeroImage} alt={wishlist.wishlistName} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Map className="w-12 h-12 text-ink-muted" strokeWidth={1} />

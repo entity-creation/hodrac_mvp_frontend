@@ -9,6 +9,7 @@ import { ROUTES, tripsForPlacePath } from "../../../../utils/v2Utils/routes";
 import type { TripPost } from "../../../../types";
 import { tripCapacity } from "../../../../utils/v2Utils/trips";
 
+import Img from "../../ui/Img";
 function dateLabel(t: TripPost) {
   if (t.isDateFlexible || !t.startDate) return "Flexible dates";
   return new Date(t.startDate).toLocaleDateString(undefined, { month: "short", year: "numeric" });
@@ -58,7 +59,7 @@ export default function TripsStrip() {
                 >
                   <div className={`h-44 shrink-0 ${colour.bg} relative`}>
                     {t.coverImageUrl
-                      ? <img src={t.coverImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      ? <Img src={t.coverImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                       : <div className="w-full h-full" />}
                     <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-white/70 backdrop-blur-md rounded-full px-2.5 py-1 text-xs font-medium text-ink">
                       <CalendarDays className="w-3.5 h-3.5" /> {dateLabel(t)}

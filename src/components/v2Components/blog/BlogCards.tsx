@@ -7,6 +7,7 @@ import type {
   BlogDestinationCard, BlogEventCard, BlogPostSummary, BlogWishlistCard,
 } from "../../../types/blog";
 
+import Img from "../ui/Img";
 const placeLine = (p: Pick<BlogPostSummary, "city" | "country">) => [p.city?.name, p.country?.name].filter(Boolean).join(", ");
 
 // ─── Post cards ───────────────────────────────────────────────────────────────
@@ -18,7 +19,7 @@ export function BlogPostCard({ post, large = false }: { post: BlogPostSummary; l
       <Link to={blogPath(post.slug)} className="block">
         <div className={`overflow-hidden rounded-3xl bg-cream-deep ${large ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
           {post.coverImageUrl && (
-            <img src={post.coverImageUrl} alt={post.coverImageAlt ?? ""} loading="lazy"
+            <Img src={post.coverImageUrl} alt={post.coverImageAlt ?? ""} loading="lazy"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
           )}
         </div>
@@ -66,7 +67,7 @@ const thumb = "w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl bg-cream-deep objec
 export function DestinationCardInline({ d }: { d: BlogDestinationCard }) {
   return (
     <Link to={destinationPath(d.id, d.name)} className={cardShell}>
-      {d.heroImageUrl ? <img src={d.heroImageUrl} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
+      {d.heroImageUrl ? <Img src={d.heroImageUrl} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
       <div className="min-w-0 py-1">
         <p className="text-[11px] uppercase tracking-[0.15em] text-ink-muted">Place</p>
         <p className="text-lg text-ink leading-snug">{d.name}</p>
@@ -81,7 +82,7 @@ export function WishlistCardInline({ w }: { w: BlogWishlistCard }) {
   const { formatPrice } = useCurrency();
   return (
     <Link to={wishlistPath(w.id, w.name)} className={cardShell}>
-      {w.heroImage ? <img src={w.heroImage} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
+      {w.heroImage ? <Img src={w.heroImage} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
       <div className="min-w-0 py-1">
         <p className="text-[11px] uppercase tracking-[0.15em] text-ink-muted">Itinerary</p>
         <p className="text-lg text-ink leading-snug">{w.name}</p>
@@ -99,7 +100,7 @@ export function WishlistCardInline({ w }: { w: BlogWishlistCard }) {
 export function EventCardInline({ e }: { e: BlogEventCard }) {
   return (
     <div className={`${cardShell} hover:border-line`}>
-      {e.imageUrl ? <img src={e.imageUrl} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
+      {e.imageUrl ? <Img src={e.imageUrl} alt="" loading="lazy" className={thumb} /> : <div className={thumb} />}
       <div className="min-w-0 py-1">
         <p className="text-[11px] uppercase tracking-[0.15em] text-ink-muted">Event{e.isFree ? " · Free" : ""}</p>
         <p className="text-lg text-ink leading-snug">{e.name}</p>

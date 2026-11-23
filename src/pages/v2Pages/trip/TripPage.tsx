@@ -13,6 +13,7 @@ import { destinationPath, ROUTES } from "../../../utils/v2Utils/routes";
 import type { TripPost, TripInterestStatus } from "../../../types";
 import { HostBlock, HostedDetails, HostedJoinPanel, HostedPriceBox } from "../../../components/v2Components/host/HostedTrip";
 
+import Img from "../../../components/v2Components/ui/Img";
 // /trips/:id — the shareable trip page. Works without login (public endpoint:
 // no author or head-counts); signed-in visitors get the full trip, including
 // head-counts and their own request status.
@@ -109,7 +110,7 @@ export default function TripPage() {
 
       <div className={`aspect-16/9 md:aspect-21/9 rounded-2xl overflow-hidden ${colour.bg}`}>
         {trip.coverImageUrl
-          ? <img src={trip.coverImageUrl} alt="" className="w-full h-full object-cover" />
+          ? <Img src={trip.coverImageUrl} alt="" className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Map className="w-12 h-12 text-ink-muted" strokeWidth={1} /></div>}
       </div>
 

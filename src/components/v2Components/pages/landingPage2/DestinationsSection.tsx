@@ -11,6 +11,7 @@ import type { DestinationSummary } from "../../../../types";
 import { destinationPath, ROUTES } from "../../../../utils/v2Utils/routes";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
 
+import Img from "../../ui/Img";
 // The headline "Popular right now" block: one large feature plus four tiles,
 // image-led with frosted-glass labels.
 export default function DestinationsSection() {
@@ -105,7 +106,7 @@ function PopularTile({
         aria-label={d.destinationName}
       >
         {d.thumbnailUrl ? (
-          <img
+          <Img
             src={d.thumbnailUrl}
             alt=""
             loading={large ? "eager" : "lazy"}

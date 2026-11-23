@@ -15,6 +15,7 @@ import { hostEditTripPath, hostManifestPath, tripPayPath } from "../../../utils/
 import type { TripPost } from "../../../types";
 import type { TripTerms } from "../../../types/host";
 
+import Img from "../ui/Img";
 const fmtDay = (d: string) =>
   new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
@@ -27,7 +28,7 @@ export function HostBlock({ trip }: { trip: TripPost }) {
   return (
     <div className="flex items-center gap-3">
       <div className="w-12 h-12 rounded-full bg-cream-deep overflow-hidden flex items-center justify-center text-ink font-medium shrink-0">
-        {host.logoUrl ? <img src={host.logoUrl} alt="" className="w-full h-full object-cover" /> : host.displayName.charAt(0).toUpperCase()}
+        {host.logoUrl ? <Img src={host.logoUrl} alt="" className="w-full h-full object-cover" /> : host.displayName.charAt(0).toUpperCase()}
       </div>
       <div className="min-w-0">
         <p className="text-xs text-ink-muted">Hosted by</p>

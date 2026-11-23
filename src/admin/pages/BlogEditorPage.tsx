@@ -11,6 +11,7 @@ import BlogMarkdown from "../../components/v2Components/blog/BlogMarkdown";
 import { fieldErrors, formErrorText } from "../../utils/v2Utils/host";
 import { blogPath } from "../../utils/v2Utils/routes";
 
+import Img from "../../components/v2Components/ui/Img";
 // ─── Form model ───────────────────────────────────────────────────────────────
 
 interface Form {
@@ -350,7 +351,7 @@ function Editor({ post: initial }: { post: AdminBlogPost | null }) {
                 <TextInput value={form.coverImageUrl} onChange={e => set("coverImageUrl", e.target.value)} placeholder="https://…" />
                 {err("coverImageUrl")}
               </Labeled>
-              {form.coverImageUrl.startsWith("http") && <img src={form.coverImageUrl} alt="" className="w-full aspect-[16/9] object-cover rounded-lg bg-cream-deep" />}
+              {form.coverImageUrl.startsWith("http") && <Img src={form.coverImageUrl} alt="" className="w-full aspect-[16/9] object-cover rounded-lg bg-cream-deep" />}
               <Labeled label="Cover image description" hint="For screen readers and search engines.">
                 <TextInput value={form.coverImageAlt} onChange={e => set("coverImageAlt", e.target.value)} />
               </Labeled>

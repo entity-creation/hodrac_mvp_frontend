@@ -4,9 +4,13 @@ import { adminApi, totalPages, type AdminCreator, type CreatorInput } from "../a
 import {
   AdminPage, Btn, Check, DataTable, DetailList, Drawer, ErrorBlock, Field, Pager, Pill, SearchBox, Select, TextArea, TextInput, Toolbar, type Column,
 } from "../ui";
-import { useAction, useDebounced, useQuery } from "../hooks";
+import { useAction, useDebounced, useQuery, useToast } from "../hooks";
+import { validationDetails } from "../../dataStore/v2Api/client";
+import { fieldErrors } from "../../utils/v2Utils/host";
+import { friendlyError } from "../../utils/v2Utils/apiErrors";
 import { fmtDate, fmtDateTime, fmtNumber } from "../format";
 
+import Img from "../../components/v2Components/ui/Img";
 const PAGE_SIZE = 25;
 type VerifiedFilter = "all" | "verified" | "unverified";
 
@@ -22,7 +26,7 @@ const nullIfEmpty = (s: string) => (s.trim() === "" ? null : s.trim());
 
 function Avatar({ url, name }: { url: string | null; name: string }) {
   return url ? (
-    <img src={url} alt="" className="w-8 h-8 rounded-full object-cover border border-line shrink-0" />
+    <Img src={url} alt="" className="w-8 h-8 rounded-full object-cover border border-line shrink-0" />
   ) : (
     <div className="w-8 h-8 rounded-full border border-line bg-cream-deep flex items-center justify-center text-xs text-ink-soft shrink-0">
       {name.slice(0, 1).toUpperCase()}
@@ -41,7 +45,9 @@ function CreatorDrawer({ creator, onClose, onSaved }: { creator: AdminCreator | 
     Object.fromEntries(TEXT_KEYS.map(k => [k, creator?.[k] ?? ""])) as Record<TextKey, string>);
   const [isVerified, setIsVerified] = useState(creator?.isVerified ?? false);
   const [err, setErr] = useState("");
-  const { run, busy } = useAction();
+  const [avatarErr, setAvatarErr] = useState("");
+  const [saving, setSaving] = useState(false);
+  const notify = useToast();
   const quick = useAction();
 
   const set = (k: TextKey) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -51,6 +57,7 @@ function CreatorDrawer({ creator, onClose, onSaved }: { creator: AdminCreator | 
 
   const save = async () => {
     setErr("");
+    setAvatarErr("");
     if (!form.displayName.trim()) return setErr("Display name is required.");
     for (const k of ["profileUrl", "avatarUrl"] as const) {
       if (form[k].trim() && !isHttpUrl(form[k].trim())) return setErr(`${k === "profileUrl" ? "Profile" : "Avatar"} URL must start with http:// or https://.`);
@@ -67,15 +74,29 @@ function CreatorDrawer({ creator, onClose, onSaved }: { creator: AdminCreator | 
     }
     if (!creator) {
       if (isVerified) body.isVerified = true;
-      const r = await run(() => adminApi.creators.create(body), { success: "Creator created.", errors });
-      if (r.ok) onSaved();
-      return;
+      return send(() => adminApi.creators.create(body), "Creator created.");
     }
     if (isVerified !== creator.isVerified) body.isVerified = isVerified;
     if (!Object.keys(body).length) return onClose();
-    const r = await run(() => adminApi.creators.update(creator.creatorId, body), { success: "Creator saved.", errors });
-    if (r.ok) onSaved();
+    return send(() => adminApi.creators.update(creator.creatorId, body), "Creator saved.");
   };
+
+  // On success the list reloads, so a corrected avatar link shows. The server
+  // only accepts a full http(s) link for the avatar (errors.AvatarUrl).
+  async function send(fn: () => Promise<unknown>, success: string) {
+    setSaving(true);
+    try {
+      await fn();
+      notify(success);
+      onSaved();
+    } catch (e) {
+      const fe = fieldErrors(e);
+      if (fe.avatarUrl) setAvatarErr(fe.avatarUrl);
+      else notify(validationDetails(e) || friendlyError(e, errors, "Something went wrong."), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const toggleVerified = async () => {
     if (!creator) return;
@@ -95,7 +116,7 @@ function CreatorDrawer({ creator, onClose, onSaved }: { creator: AdminCreator | 
           </Btn>
         )}
         <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" loading={busy} onClick={save}>{creator ? "Save" : "Create creator"}</Btn>
+        <Btn variant="primary" loading={saving} onClick={save}>{creator ? "Save" : "Create creator"}</Btn>
       </>}>
       <div className="flex flex-col gap-6">
         {creator && (
@@ -117,7 +138,10 @@ function CreatorDrawer({ creator, onClose, onSaved }: { creator: AdminCreator | 
             <Field label="Platform"><TextInput value={form.platformName} onChange={set("platformName")} placeholder="Instagram, TikTok, YouTube…" /></Field>
           </div>
           <Field label="Profile URL"><TextInput value={form.profileUrl} onChange={set("profileUrl")} placeholder="https://" /></Field>
-          <Field label="Avatar URL"><TextInput value={form.avatarUrl} onChange={set("avatarUrl")} placeholder="https://" /></Field>
+          <Field label="Avatar URL">
+            <TextInput value={form.avatarUrl} onChange={set("avatarUrl")} placeholder="https://" />
+            {avatarErr && <span className="text-xs text-red-700">{avatarErr}</span>}
+          </Field>
           <Field label="Contact email"><TextInput type="email" value={form.contactEmail} onChange={set("contactEmail")} /></Field>
           <Field label="Bio"><TextArea rows={4} value={form.bio} onChange={set("bio")} /></Field>
           <Check label="Verified" checked={isVerified} onChange={setIsVerified} />

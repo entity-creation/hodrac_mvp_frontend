@@ -15,6 +15,7 @@ import { friendlyError } from "../../../utils/v2Utils/apiErrors";
 import { ROUTES, blogPath, blogTagPath } from "../../../utils/v2Utils/routes";
 import type { BlogPost } from "../../../types/blog";
 
+import Img from "../../../components/v2Components/ui/Img";
 type State = { slug: string } & ({ post: BlogPost } | { notFound: true } | { error: string });
 
 // /blog/:slug
@@ -93,7 +94,7 @@ export default function BlogPostPage() {
 
       {post.coverImageUrl && (
         <figure className="max-w-5xl mx-auto px-5 md:px-8 mt-10">
-          <img src={post.coverImageUrl} alt={post.coverImageAlt ?? ""} className="w-full aspect-[16/9] object-cover rounded-3xl bg-cream-deep" />
+          <Img src={post.coverImageUrl} alt={post.coverImageAlt ?? ""} className="w-full aspect-[16/9] object-cover rounded-3xl bg-cream-deep" />
         </figure>
       )}
 

@@ -9,6 +9,7 @@ import { colourwayFor } from "../../../utils/v2Utils/format";
 import { eventsApi } from "../../../dataStore/v2Api/client";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 
+import Img from "../ui/Img";
 // Both cards use fixed-height slots (image ratio, clamped title, reserved
 // description lines, pinned footer) so a grid of them always lines up.
 // The title is a real link stretched over the whole card (so crawlers and
@@ -44,7 +45,7 @@ export function WishlistCardComponent({ wishlist, saved, onToggleSave, index = 0
     >
       <div className={`relative aspect-4/3 shrink-0 overflow-hidden ${colour.bg}`}>
         {wishlist.wishlistHeroImage ? (
-          <img
+          <Img
             src={wishlist.wishlistHeroImage}
             alt=""
             loading="lazy"
@@ -121,7 +122,7 @@ export function DestinationCardComponent({ destination, saved, onToggleSave, ind
     >
       <div className={`relative aspect-4/3 shrink-0 overflow-hidden ${colour.bg}`}>
         {destination.thumbnailUrl ? (
-          <img
+          <Img
             src={destination.thumbnailUrl}
             alt=""
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"

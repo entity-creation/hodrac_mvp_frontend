@@ -21,6 +21,7 @@ import type { WishlistCard } from "../../../types";
 import { useCurrency } from "../../../hooks/v2Hooks/useCurrency";
 import ShareButton from "../../../components/v2Components/share/ShareButton";
 
+import Img from "../../../components/v2Components/ui/Img";
 const SAFETY = [
   { label: "", color: "var(--color-ink-muted)" },
   { label: "Very safe", color: "var(--color-mint-500)" },
@@ -48,7 +49,7 @@ function ImageGallery({ images, name }: { images: Array<{ imageUrl: string; capt
   return (
     <div className="flex flex-col gap-3">
       <div className="relative aspect-16/10 rounded-2xl overflow-hidden border border-line shadow-pop-lg bg-white">
-        <img src={current.imageUrl} alt={current.caption || name} className="w-full h-full object-cover" />
+        <Img src={current.imageUrl} alt={current.caption || name} className="w-full h-full object-cover" />
         {current.caption && (
           <div className="absolute bottom-3 left-3 right-3">
             <p className="inline-block bg-white/70 backdrop-blur-md border border-line rounded-full px-3 py-1 text-xs font-semibold text-ink">
@@ -68,7 +69,7 @@ function ImageGallery({ images, name }: { images: Array<{ imageUrl: string; capt
                 i === active ? "border-ink shadow-pop-sm" : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <img src={img.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <Img src={img.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
             </button>
           ))}
         </div>

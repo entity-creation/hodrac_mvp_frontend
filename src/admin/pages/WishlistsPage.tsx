@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus, X } from "lucide-react";
-import { isApiError } from "../../dataStore/v2Api/client";
+import { isApiError, validationDetails } from "../../dataStore/v2Api/client";
+import { fieldErrors } from "../../utils/v2Utils/host";
+import { friendlyError } from "../../utils/v2Utils/apiErrors";
 import {
   adminApi, enumName, totalPages, POOL_TYPES, WISHLIST_SORTS,
   type AdminAttribution, type AdminCity, type AdminCreator, type AdminItineraryDay, type AdminItineraryItem,
@@ -301,7 +303,9 @@ function DetailsForm({ base: initial, xmin, onSaved, onReload }: {
         onSaved(updated);
       }
     } catch (err) {
+      const fe = fieldErrors(err);
       if (isApiError(err, 409) && base) setConflict(true);
+      else if (fe.wishlistHeroImage) setErrors(fe); // e.g. not a full http(s) link
       else notify(isApiError(err, 404) ? GONE : err instanceof Error && err.message ? err.message : "Something went wrong.", "error");
     } finally {
       setBusy(false);
@@ -333,6 +337,7 @@ function DetailsForm({ base: initial, xmin, onSaved, onReload }: {
             <Thumb src={nullIfBlank(form.wishlistHeroImage)} alt="Hero preview" size="w-16 h-12" />
             <TextInput value={form.wishlistHeroImage} onChange={e => set("wishlistHeroImage", e.target.value)} placeholder="https://…" />
           </div>
+          <FieldError message={errors.wishlistHeroImage} />
         </Field>
         <Field label="People type" hint="e.g. Couples, Friends, Family">
           <TextInput value={form.peopleType} onChange={e => set("peopleType", e.target.value)} />
@@ -694,7 +699,9 @@ function ItemEditor({ wishlistId, dayId, item, orderIndex, onDone }: {
     isSelectedByDefault: item?.isSelectedByDefault ?? true,
   });
   const [error, setError] = useState("");
-  const save = useAction();
+  const [imageError, setImageError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const notify = useToast();
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm(f => ({ ...f, [k]: v }));
 
   const submit = async () => {
@@ -711,13 +718,22 @@ function ItemEditor({ wishlistId, dayId, item, orderIndex, onDone }: {
       isSelectedByDefault: form.isSelectedByDefault,
       orderIndex,
     };
-    const r = await save.run(
-      () => (item
+    setImageError("");
+    setBusy(true);
+    try {
+      await (item
         ? adminApi.wishlists.itinerary.updateItem(wishlistId, dayId, item.itemId, body)
-        : adminApi.wishlists.itinerary.addItem(wishlistId, dayId, body)),
-      { success: item ? "Item saved" : "Item added", errors: { 404: "This item or day no longer exists." } },
-    );
-    if (r.ok) onDone(true);
+        : adminApi.wishlists.itinerary.addItem(wishlistId, dayId, body));
+      notify(item ? "Item saved" : "Item added");
+      onDone(true); // the list reloads, so a corrected image link shows
+    } catch (err) {
+      // The image link is checked by the server (absolute http(s) only).
+      const fe = fieldErrors(err);
+      if (fe.imageUrl) setImageError(fe.imageUrl);
+      else notify(validationDetails(err) || friendlyError(err, { 404: "This item or day no longer exists." }, "Something went wrong."), "error");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -740,6 +756,7 @@ function ItemEditor({ wishlistId, dayId, item, orderIndex, onDone }: {
           <Thumb src={nullIfBlank(form.imageUrl)} alt="Item preview" size="w-12 h-12" />
           <TextInput value={form.imageUrl} onChange={e => set("imageUrl", e.target.value)} placeholder="https://…" />
         </div>
+        <FieldError message={imageError} />
       </Field>
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="Social proof badge"><TextInput value={form.socialProofBadge} onChange={e => set("socialProofBadge", e.target.value)} placeholder="e.g. Most booked" /></Field>
@@ -751,7 +768,7 @@ function ItemEditor({ wishlistId, dayId, item, orderIndex, onDone }: {
       </div>
       <div className="flex justify-end gap-2">
         <Btn size="sm" variant="ghost" onClick={() => onDone(false)}>Cancel</Btn>
-        <Btn size="sm" variant="primary" loading={save.busy} onClick={submit}>{item ? "Save item" : "Add item"}</Btn>
+        <Btn size="sm" variant="primary" loading={busy} onClick={submit}>{item ? "Save item" : "Add item"}</Btn>
       </div>
     </div>
   );

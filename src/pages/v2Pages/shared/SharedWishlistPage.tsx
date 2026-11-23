@@ -9,6 +9,7 @@ import { colourwayFor } from "../../../utils/v2Utils/format";
 import { ROUTES } from "../../../utils/v2Utils/routes";
 import type { ItineraryDay, WishlistDetail } from "../../../types";
 
+import Img from "../../../components/v2Components/ui/Img";
 // /shared/wishlists/:token — read-only view of a user's own wishlist, opened
 // from a link its owner shared. No login needed; 404 once the owner revokes it.
 export default function SharedWishlistPage() {
@@ -58,7 +59,7 @@ export default function SharedWishlistPage() {
 
       <div className={`aspect-16/9 md:aspect-21/9 rounded-2xl overflow-hidden ${colour.bg}`}>
         {w.wishlistHeroImage
-          ? <img src={w.wishlistHeroImage} alt="" className="w-full h-full object-cover" />
+          ? <Img src={w.wishlistHeroImage} alt="" className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Map className="w-12 h-12 text-ink-muted" strokeWidth={1} /></div>}
       </div>
 
@@ -137,7 +138,7 @@ function DayBlock({ day, formatPrice }: { day: ItineraryDay; formatPrice: (usd: 
           {items.map(item => (
             <li key={item.itemId} className="flex gap-3">
               {item.imageUrl
-                ? <img src={item.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 bg-cream-deep" />
+                ? <Img src={item.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 bg-cream-deep" />
                 : <div className="w-16 h-16 rounded-xl bg-cream-deep shrink-0 flex items-center justify-center"><ImageIcon className="w-5 h-5 text-ink-muted" strokeWidth={1.25} /></div>}
               <div className="min-w-0">
                 <p className="text-sm text-ink">

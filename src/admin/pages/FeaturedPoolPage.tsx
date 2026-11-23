@@ -9,6 +9,7 @@ import { useAction, useQuery } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber, fmtUsd, fromLocalInput, toLocalInput } from "../format";
 import { WishlistPicker, type PickedRef } from "./PartnersPage";
 
+import Img from "../../components/v2Components/ui/Img";
 const typeOf = (e: AdminFeaturedPoolEntry) => enumName(e.poolType, POOL_TYPES);
 
 const TYPE_TONE: Record<PoolType, "info" | "good" | "warn"> = { Editorial: "info", Paid: "good", Random: "warn" };
@@ -60,7 +61,7 @@ function HeroSummary({ hero, onCleared }: { hero: AdminHero; onCleared: () => vo
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
       <div className="w-full sm:w-40 aspect-4/3 rounded-xl overflow-hidden bg-cream-deep shrink-0">
-        {hero.wishlistHeroImage && <img src={hero.wishlistHeroImage} alt="" className="w-full h-full object-cover" />}
+        {hero.wishlistHeroImage && <Img src={hero.wishlistHeroImage} alt="" className="w-full h-full object-cover" />}
       </div>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">

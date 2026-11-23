@@ -9,6 +9,7 @@ import type { PersonalizationData } from "../../../../hooks/v2Hooks/usePersonali
 import type { WishlistCard } from "../../../../types";
 import { useCurrency } from "../../../../hooks/v2Hooks/useCurrency";
 
+import Img from "../../ui/Img";
 export type { PersonalizationData };
 
 interface PersonalizationModalProps {
@@ -241,7 +242,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete }: Pe
                   >
                     <span className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-brand-100 flex items-center justify-center text-2xl">
                       {w.wishlistHeroImage
-                        ? <img src={w.wishlistHeroImage} alt="" className="w-full h-full object-cover" />
+                        ? <Img src={w.wishlistHeroImage} alt="" className="w-full h-full object-cover" />
                         : null}
                     </span>
                     <span className="flex-1 min-w-0">

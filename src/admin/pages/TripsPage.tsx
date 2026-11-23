@@ -11,6 +11,7 @@ import {
 import { useAction, useDebounced, useQuery } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber } from "../format";
 
+import Img from "../../components/v2Components/ui/Img";
 const PAGE_SIZE = 25;
 const MESSAGE_PAGE_SIZE = 30;
 
@@ -238,7 +239,7 @@ function TripDrawer({ id, onClose, onChanged }: { id: string | null; onClose: ()
           )}
 
           {trip.coverImageUrl && (
-            <img src={trip.coverImageUrl} alt="" className="w-full max-h-56 object-cover rounded-2xl border border-line" />
+            <Img src={trip.coverImageUrl} alt="" className="w-full max-h-56 object-cover rounded-2xl border border-line" />
           )}
 
           <section>

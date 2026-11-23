@@ -18,6 +18,7 @@ import { Modal } from "../ui";
 import { isApiError, normalizeInterestStatus } from "../../../dataStore/v2Api/client";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
 
+import Img from "../ui/Img";
 interface TripFeedCardProps {
   trip: TripPost;
   currentUserId: string;
@@ -117,7 +118,7 @@ export default function TripFeedCard({
       {/* Cover — fixed ratio */}
       <div className="relative shrink-0 overflow-hidden">
         {trip.coverImageUrl ? (
-          <img
+          <Img
             src={trip.coverImageUrl}
             alt=""
             loading="lazy"

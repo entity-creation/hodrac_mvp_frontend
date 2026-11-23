@@ -15,6 +15,7 @@ import { fmtDateTime, fmtNumber, fmtUsd } from "../format";
 import { FeatureForm } from "./FeaturedDestinationsPage";
 import { DestinationAudiencePanel } from "../insightsUi";
 
+import Img from "../../components/v2Components/ui/Img";
 // ─── Shared pickers (also used by WishlistsPage) ──────────────────────────────
 
 export interface PickOption { value: string; label: string; hint?: string }
@@ -96,7 +97,7 @@ export function FieldError({ message }: { message?: string }) {
 
 export function Thumb({ src, alt, size = "w-10 h-10" }: { src: string | null | undefined; alt: string; size?: string }) {
   return src ? (
-    <img src={src} alt={alt} loading="lazy" className={`${size} rounded-lg object-cover border border-line shrink-0 bg-cream-deep`} />
+    <Img src={src} alt={alt} loading="lazy" className={`${size} rounded-lg object-cover border border-line shrink-0 bg-cream-deep`} />
   ) : (
     <span className={`${size} rounded-lg border border-line bg-cream-deep flex items-center justify-center shrink-0`}>
       <ImageOff className="w-4 h-4 text-ink-muted" />

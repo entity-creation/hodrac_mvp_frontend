@@ -2,6 +2,7 @@ import { ExternalLink, BadgeCheck } from "lucide-react";
 import { buttonClasses } from "../ui";
 import type { Partner } from "../../../types";
 
+import Img from "../ui/Img";
 // Where on the site the click came from. The backend records it with the click
 // (anything else is stored as "other").
 export type PartnerClickSource =
@@ -74,7 +75,7 @@ export function PartnerBadge({
       } ${className}`}
     >
       {partner.logoUrl ? (
-        <img src={partner.logoUrl} alt="" className="w-5 h-5 rounded-full object-cover bg-white" />
+        <Img src={partner.logoUrl} alt="" className="w-5 h-5 rounded-full object-cover bg-white" />
       ) : (
         <BadgeCheck className="w-5 h-5 text-sun-500" strokeWidth={1.5} />
       )}
