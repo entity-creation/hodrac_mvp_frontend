@@ -1,6 +1,6 @@
 // Client-side checks for a hosted trip's payment schedule, mirroring the
 // backend rules so hosts see problems before saving. The server re-checks.
-import type { Kobo, TripInstalment } from "../../types/host";
+import type { InstalmentDatesMode, Kobo, TripInstalment } from "../../types/host";
 import { formatNaira } from "./host";
 
 export interface ScheduleRow { amountNaira: string; dueDate: string }
@@ -11,23 +11,40 @@ export function parseNaira(text: string): number {
   return digits ? Number(digits) : NaN;
 }
 
-export function toInstalments(rows: ScheduleRow[]): TripInstalment[] {
-  return rows.map((r, i) => ({ sequence: i + 1, amountKobo: Math.round(parseNaira(r.amountNaira) * 100), dueDate: r.dueDate }));
+// TravellerChooses: no due dates (each traveller picks theirs when accepting the terms).
+export function toInstalments(rows: ScheduleRow[], mode: InstalmentDatesMode = "HostSet"): TripInstalment[] {
+  return rows.map((r, i) => ({
+    sequence: i + 1,
+    amountKobo: Math.round(parseNaira(r.amountNaira) * 100),
+    dueDate: mode === "TravellerChooses" ? null : r.dueDate,
+  }));
 }
+
+// Today in Lagos (WAT, UTC+1), as yyyy-MM-dd: the backend's business day.
+export const todayWat = () => new Date(Date.now() + 3_600_000).toISOString().slice(0, 10);
 
 export function validateSchedule(input: {
   priceKobo: Kobo; depositKobo: Kobo; instalments: TripInstalment[]; startDate: string;
+  mode?: InstalmentDatesMode; payInFullByDate?: string;
 }): Record<string, string> {
-  const { priceKobo, depositKobo, instalments, startDate } = input;
+  const { priceKobo, depositKobo, instalments, startDate, mode = "HostSet", payInFullByDate = "" } = input;
+  const travellerChooses = mode === "TravellerChooses";
   const e: Record<string, string> = {};
   if (!(priceKobo > 0)) e.pricePerSeatKobo = "Enter the price per seat.";
   if (!(depositKobo > 0)) e.depositKobo = "Enter the deposit.";
   else if (priceKobo > 0 && depositKobo > priceKobo) e.depositKobo = "The deposit can't be more than the price per seat.";
 
+  if (travellerChooses && instalments.length) {
+    if (!payInFullByDate) e.payInFullByDate = "Choose the date everything must be paid by.";
+    else if (payInFullByDate <= todayWat()) e.payInFullByDate = "Must be after today.";
+    else if (startDate && payInFullByDate >= startDate) e.payInFullByDate = "Must be before the trip starts.";
+  }
+
   instalments.forEach((ins, i) => {
     if (!(ins.amountKobo > 0)) e[`instalments[${i}].amountKobo`] = "Enter an amount.";
+    if (travellerChooses) return; // travellers pick the dates
     if (!ins.dueDate) e[`instalments[${i}].dueDate`] = "Choose a due date.";
-    else if (i > 0 && instalments[i - 1].dueDate && ins.dueDate <= instalments[i - 1].dueDate)
+    else if (i > 0 && instalments[i - 1].dueDate && ins.dueDate <= instalments[i - 1].dueDate!)
       e[`instalments[${i}].dueDate`] = "Must be due after the one before it.";
     else if (startDate && ins.dueDate >= startDate) e[`instalments[${i}].dueDate`] = "Must be due before the trip starts.";
   });
@@ -36,6 +53,26 @@ export function validateSchedule(input: {
   if (priceKobo > 0 && depositKobo > 0 && total !== priceKobo) {
     e.instalments = `The deposit plus all instalments must add up to the price per seat (${total < priceKobo ? "short" : "over"} by ${formatNaira(Math.abs(priceKobo - total))}).`;
   }
+  return e;
+}
+
+// ─── Traveller-chosen instalment dates ────────────────────────────────────────
+
+export interface DateRow { sequence: number; amountKobo: Kobo; dueDate: string }
+
+const fmtDay = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
+// Matches the API: every date set, in order, between today and the pay-in-full
+// date. Keys match the API's errors (instalmentDates[i].dueDate).
+export function checkInstalmentDates(rows: DateRow[], min: string, max: string | null): Record<string, string> {
+  const e: Record<string, string> = {};
+  rows.forEach((r, i) => {
+    const key = `instalmentDates[${i}].dueDate`;
+    if (!r.dueDate) e[key] = "Choose a date.";
+    else if (r.dueDate < min) e[key] = "Can't be in the past.";
+    else if (max && r.dueDate > max) e[key] = `Must be on or before ${fmtDay(max)}.`;
+    else if (i > 0 && rows[i - 1].dueDate && r.dueDate <= rows[i - 1].dueDate) e[key] = "Must be after the instalment before it.";
+  });
   return e;
 }
 

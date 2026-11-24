@@ -134,7 +134,7 @@ export interface AdminUserDetail extends AdminUserRow {
 
 // ─── Newsletter ───────────────────────────────────────────────────────────────
 
-export interface AdminSubscriber { emailId: string; userEmail: string }
+export interface AdminSubscriber { emailId: string; userEmail: string; unsubscribedAt: string | null }
 
 // ─── Lookups ──────────────────────────────────────────────────────────────────
 

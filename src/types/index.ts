@@ -12,6 +12,13 @@ export interface UserDto {
   countryCode?: string | null;
   createdAt: string;
   lastLoginAt: string | null;
+  newsletterOptOut?: boolean;
+}
+
+// GET/PATCH /api/auth/me/notification-preferences
+export interface NotificationPreferences {
+  emailOptIn: boolean;
+  newsletterOptOut: boolean;
 }
 
 export interface AuthResponse {
@@ -381,7 +388,7 @@ export interface WishlistFilters {
 // Shared types for the trip-posting feature. Mirrors backend/Dtos/TripPostDto.cs
 // and the Models — keep these in sync if the C# side changes shape.
 
-import type { FeeMode, InterestPaymentStatus, Kobo, MyNextPayment, TripHost, TripInstalment } from "./host";
+import type { FeeMode, InstalmentDatesMode, InterestPaymentStatus, Kobo, MyNextPayment, TripHost, TripInstalment } from "./host";
 import type { BlogPostSummary } from "./blog";
 
 export type TripPostStatus = "Open" | "Closed" | "Cancelled";
@@ -389,7 +396,8 @@ export type TripPostStatus = "Open" | "Closed" | "Cancelled";
 // "community" = today's free trips; "hosted" = Hodrac Host (paid seats).
 export type TripType = "community" | "hosted";
 
-export type TripInterestStatus = "Requested" | "Approved" | "Declined" | "Withdrawn";
+// Removed: a host removed an approved traveller who missed an instalment (hosted trips).
+export type TripInterestStatus = "Requested" | "Approved" | "Declined" | "Withdrawn" | "Removed";
 
 export interface TripStop {
   destinationId: string; // Guid
@@ -441,6 +449,8 @@ export interface TripPost {
   depositKobo?: Kobo | null;
   instalments?: TripInstalment[] | null;
   feeMode?: FeeMode | null;
+  instalmentDatesMode?: InstalmentDatesMode | null; // who sets the instalment dates
+  payInFullByDate?: string | null;                  // TravellerChooses: last allowed due date
   travellerFeePreviewKobo?: Kobo | null; // booking fee on the full price (0 if absorbed/waived)
   seatsLeft?: number | null;
   inclusions?: string | null;
@@ -497,7 +507,9 @@ export type NotificationType =
   | "InstalmentDue"       // to the traveller
   | "SeatHoldExpiring"    // to the traveller
   | "SeatHoldExpired"     // to both sides
-  | "DisputeOpened";      // to the host
+  | "DisputeOpened"       // to the host
+  | "InstalmentDatesChanged"   // to the host: a traveller moved their dates
+  | "RemovedForMissedPayment"; // to the traveller
 
 export interface TripNotification {
   id: string;

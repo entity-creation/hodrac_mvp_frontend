@@ -32,6 +32,7 @@ export const ROUTES = {
         HOME: "/host",                    // pitch for visitors, dashboard for hosts
         ONBOARDING: "/host/onboarding",
         TRIPS: "/host/trips",
+        DASHBOARD: "/host/dashboard",     // all trips: money, who owes
         NEW_TRIP: "/host/trips/new",
         REPORTS: "/host/reports",
         PAYMENT_CALLBACK: "/trips/payment/callback",

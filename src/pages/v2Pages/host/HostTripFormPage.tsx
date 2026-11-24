@@ -11,7 +11,7 @@ import { TERMS_TEMPLATES, parseNaira, toInstalments, validateSchedule, type Sche
 import { flyerHref } from "../../../utils/v2Utils/hostOffer";
 import { ROUTES, hostManifestPath } from "../../../utils/v2Utils/routes";
 import type { DestinationSearchResult, TripPost, WishlistSearchResult } from "../../../types";
-import type { FeeMode, HostProfile } from "../../../types/host";
+import type { FeeMode, HostProfile, InstalmentDatesMode } from "../../../types/host";
 
 type Mode = "destination" | "wishlist" | "freetext";
 type Picked = { id: string; name: string };
@@ -88,8 +88,12 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
   const [price, setPrice] = useState(trip?.pricePerSeatKobo ? String(trip.pricePerSeatKobo / 100) : "");
   const [deposit, setDeposit] = useState(trip?.depositKobo ? String(trip.depositKobo / 100) : "");
   const [rows, setRows] = useState<ScheduleRow[]>(
-    (trip?.instalments ?? []).map(i => ({ amountNaira: String(i.amountKobo / 100), dueDate: i.dueDate })));
+    (trip?.instalments ?? []).map(i => ({ amountNaira: String(i.amountKobo / 100), dueDate: i.dueDate ?? "" })));
   const [feeMode, setFeeMode] = useState<FeeMode>(trip?.feeMode ?? "PassToTraveller");
+  // Who sets the instalment dates: the host, or each traveller (by payInFullByDate).
+  const [datesMode, setDatesMode] = useState<InstalmentDatesMode>(trip?.instalmentDatesMode ?? "HostSet");
+  const [payInFullBy, setPayInFullBy] = useState(trip?.payInFullByDate ?? "");
+  const travellerChooses = datesMode === "TravellerChooses";
 
   // Terms & details
   const [terms, setTerms] = useState(initialTerms);
@@ -105,11 +109,11 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
 
   const priceKobo = Math.round((parseNaira(price) || 0) * 100);
   const depositKobo = Math.round((parseNaira(deposit) || 0) * 100);
-  const instalments = toInstalments(rows);
+  const instalments = toInstalments(rows, datesMode);
   const liveSchedule = useMemo(
-    () => validateSchedule({ priceKobo, depositKobo, instalments, startDate }),
+    () => validateSchedule({ priceKobo, depositKobo, instalments, startDate, mode: datesMode, payInFullByDate: payInFullBy }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [priceKobo, depositKobo, JSON.stringify(instalments), startDate],
+    [priceKobo, depositKobo, JSON.stringify(instalments), startDate, datesMode, payInFullBy],
   );
 
   const feeWaived =
@@ -150,7 +154,13 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
     }
     if (!profile.payoutAccountSet && !profile.closedAt) return;
 
-    const money = moneyLocked ? {} : { pricePerSeatKobo: priceKobo, depositKobo, instalments, feeMode };
+    // TravellerChooses: instalments without dueDate, plus payInFullByDate (a 400 on HostSet).
+    const money = moneyLocked ? {} : {
+      pricePerSeatKobo: priceKobo, depositKobo, feeMode,
+      instalmentDatesMode: datesMode,
+      instalments: travellerChooses ? instalments.map(i => ({ sequence: i.sequence, amountKobo: i.amountKobo })) : instalments,
+      ...(travellerChooses ? { payInFullByDate: payInFullBy } : {}),
+    };
     const common = {
       startDate, endDate, isDateFlexible: false,
       caption: caption.trim(),
@@ -251,8 +261,8 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
           <p className="text-sm text-ink-soft flex items-start gap-2" title="Travellers have paid against this schedule">
             <LockKeyhole className="w-4 h-4 mt-0.5 shrink-0" />
             {profile.closedAt
-              ? "Price, deposit, instalments and fee mode can't change while your host account is closed."
-              : "Price, deposit, instalments and fee mode can't change once a traveller has paid."}
+              ? "Price, deposit, instalments, their dates and fee mode can't change while your host account is closed."
+              : "Price, deposit, instalments, their dates and fee mode can't change once a traveller has paid."}
           </p>
         )}
         <div className="grid sm:grid-cols-2 gap-4">
@@ -278,20 +288,46 @@ function HostTripForm({ profile, trip, termsText: initialTerms, moneyLocked }: L
             )}
           </div>
           {rows.length === 0 && <p className="text-sm text-ink-muted">None: travellers pay the rest with the deposit as one payment.</p>}
+          {rows.length > 0 && (
+            <div className="mb-4">
+              <p className="text-sm text-ink-soft mb-2">Who sets the due dates?</p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {([
+                  ["HostSet", "I set the dates", "Every traveller pays each instalment on the same date."],
+                  ["TravellerChooses", "Travellers choose their dates", "Each traveller picks their own dates when they accept your terms, before a date you set."],
+                ] as const).map(([value, title, body]) => (
+                  <button key={value} type="button" disabled={moneyLocked} onClick={() => setDatesMode(value)} aria-pressed={datesMode === value}
+                    className={`text-left rounded-2xl border px-4 py-3 transition-colors disabled:opacity-60 ${datesMode === value ? "border-ink bg-white" : "border-line hover:border-ink/40"}`}>
+                    <span className="block text-sm text-ink font-medium">{title}</span>
+                    <span className="block text-xs text-ink-muted mt-0.5">{body}</span>
+                  </button>
+                ))}
+              </div>
+              {travellerChooses && (
+                <HostField label="Everything paid by *" error={err("payInFullByDate")} className="mt-3 max-w-xs"
+                  hint="Travellers choose dates between today and this date. Must be before the trip starts.">
+                  <input type="date" className={inputClass} value={payInFullBy} disabled={moneyLocked}
+                    max={startDate || undefined} onChange={e => setPayInFullBy(e.target.value)} />
+                </HostField>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             {rows.map((r, i) => (
-              <div key={i} className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 items-start">
+              <div key={i} className={`grid gap-2 items-start ${travellerChooses ? "grid-cols-[auto_1fr_auto]" : "grid-cols-[auto_1fr_1fr_auto]"}`}>
                 <span className="text-sm text-ink-muted pt-3 w-6">{i + 1}.</span>
                 <div>
                   <input inputMode="numeric" className={inputClass} value={r.amountNaira} disabled={moneyLocked} aria-label={`Instalment ${i + 1} amount`}
                     placeholder="₦" onChange={e => setRows(rs => rs.map((x, j) => (j === i ? { ...x, amountNaira: e.target.value } : x)))} />
                   {err(`instalments[${i}].amountKobo`) && <p className="text-xs text-red-700 mt-1">{err(`instalments[${i}].amountKobo`)}</p>}
                 </div>
-                <div>
-                  <input type="date" className={inputClass} value={r.dueDate} disabled={moneyLocked} max={startDate || undefined} aria-label={`Instalment ${i + 1} due date`}
-                    onChange={e => setRows(rs => rs.map((x, j) => (j === i ? { ...x, dueDate: e.target.value } : x)))} />
-                  {err(`instalments[${i}].dueDate`) && <p className="text-xs text-red-700 mt-1">{err(`instalments[${i}].dueDate`)}</p>}
-                </div>
+                {!travellerChooses && (
+                  <div>
+                    <input type="date" className={inputClass} value={r.dueDate} disabled={moneyLocked} max={startDate || undefined} aria-label={`Instalment ${i + 1} due date`}
+                      onChange={e => setRows(rs => rs.map((x, j) => (j === i ? { ...x, dueDate: e.target.value } : x)))} />
+                    {err(`instalments[${i}].dueDate`) && <p className="text-xs text-red-700 mt-1">{err(`instalments[${i}].dueDate`)}</p>}
+                  </div>
+                )}
                 {!moneyLocked && (
                   <button type="button" aria-label={`Remove instalment ${i + 1}`} onClick={() => setRows(rs => rs.filter((_, j) => j !== i))}
                     className="w-11 h-11 rounded-2xl border border-line text-ink-muted hover:text-ink flex items-center justify-center">

@@ -23,6 +23,7 @@ import type {
   ShareType,
   ShareInfo,
   WishlistShareLink,
+  NotificationPreferences,
 } from "../../types/index";
 import { TRIP_STATUS_CODE } from "../../types/index";
 import { withPreviewPartner, withPreviewPartnerList } from "../../utils/v2Utils/partnerPreview";
@@ -304,6 +305,13 @@ export const authApi = {
   // Body is NotificationPreferencesRequest { emailOptIn }.
   updateNotificationPreferences: (notificationEmailOptIn: boolean) =>
     patch<UserDto | void>("/api/auth/me/notification-preferences", { emailOptIn: notificationEmailOptIn }),
+
+  // { emailOptIn, newsletterOptOut }. Opting out also unsubscribes the
+  // account's email from the newsletter sign-up list.
+  getNotificationPreferences: () =>
+    get<NotificationPreferences>("/api/auth/me/notification-preferences"),
+  setNewsletterOptOut: (newsletterOptOut: boolean) =>
+    patch<NotificationPreferences>("/api/auth/me/notification-preferences", { newsletterOptOut }),
 
   // Changing or resetting the password ends every session on the server.
   changePassword: (currentPassword: string, newPassword: string) =>
@@ -719,7 +727,7 @@ export const userApi = {
 // the UI compares against, whatever the wire format.
 
 const TRIP_STATUS_NAMES: TripPostStatus[] = ["Open", "Closed", "Cancelled"];
-const INTEREST_STATUS_NAMES: TripInterestStatus[] = ["Requested", "Approved", "Declined", "Withdrawn"];
+const INTEREST_STATUS_NAMES: TripInterestStatus[] = ["Requested", "Approved", "Declined", "Withdrawn", "Removed"];
 
 export function normalizeTrip(trip: TripPost): TripPost {
   if (!trip) return trip;

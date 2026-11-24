@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { BarChart3, ExternalLink, Globe2, Lock, Pencil, Plus, Users } from "lucide-react";
+import { BarChart3, ExternalLink, Globe2, Lock, Pencil, Plus, Users, Wallet } from "lucide-react";
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { ButtonLink, EmptyState, FullPageSpinner } from "../../../components/v2Components/ui";
 import { FormError, HostClosedBanner, VerifiedBadge } from "../../../components/v2Components/host/HostUi";
@@ -39,8 +39,15 @@ export default function HostTripsPage() {
           <h1 className="text-4xl font-light text-ink flex flex-wrap items-center gap-3">
             {profile.displayName} {profile.verificationStatus === "Verified" && <VerifiedBadge size="md" />}
           </h1>
+          {profile.payoutAccount && profile.payoutAccountSet && (
+            <p className="text-sm text-ink-muted mt-2">
+              Payouts go to {profile.payoutAccount.accountName} · {profile.payoutAccount.bankName} ••••{profile.payoutAccount.accountLast4}
+              {!closed && <> · <Link to={`${ROUTES.HOST.ONBOARDING}?step=payout`} className="underline underline-offset-4 text-ink">Change account</Link></>}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
+          <ButtonLink to={ROUTES.HOST.DASHBOARD} variant="outline"><Wallet className="w-4 h-4" /> Money and who owes</ButtonLink>
           <ButtonLink to={ROUTES.HOST.REPORTS} variant="outline"><BarChart3 className="w-4 h-4" /> Weekly report</ButtonLink>
           {!closed && <ButtonLink to={ROUTES.HOST.NEW_TRIP}><Plus className="w-4 h-4" /> New hosted trip</ButtonLink>}
         </div>

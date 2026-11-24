@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "../../../hooks/v2Hooks/useAuth";
@@ -181,20 +181,75 @@ function NotificationsSection({ user }: { user: UserDto }) {
           <p className="text-sm text-ink">Email me about my trips</p>
           <p className="text-xs text-ink-muted mt-0.5">Join requests, approvals and new messages.</p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          aria-label="Email me about my trips"
-          disabled={saving}
-          onClick={toggle}
-          className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-60 ${enabled ? "bg-ink" : "bg-cream-deep border border-line"}`}
-        >
-          <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${enabled ? "left-6" : "left-1"}`} />
-        </button>
+        <Switch on={enabled} label="Email me about my trips" disabled={saving} onClick={toggle} />
       </div>
       {error && <div className="mt-4"><Status kind="error" message={error} /></div>}
+      <NewsletterToggle />
     </Card>
+  );
+}
+
+// The weekly newsletter. Read from the server (not the cached user), since an
+// unsubscribe link in an email can change it.
+function NewsletterToggle() {
+  const [optedOut, setOptedOut] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    authApi.getNotificationPreferences()
+      .then(p => { if (!cancelled) setOptedOut(p.newsletterOptOut); })
+      .catch(e => { if (!cancelled) setError(friendlyError(e, {}, "Couldn't load your newsletter setting.")); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const on = optedOut === false;
+
+  const toggle = async () => {
+    if (optedOut === null) return;
+    const nextOptOut = !optedOut;
+    setSaving(true);
+    setError("");
+    setOptedOut(nextOptOut); // optimistic
+    try {
+      const p = await authApi.setNewsletterOptOut(nextOptOut);
+      setOptedOut(p.newsletterOptOut);
+    } catch (e) {
+      setOptedOut(!nextOptOut); // roll back
+      setError(friendlyError(e, {}, "Couldn't update your newsletter setting."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 pt-6 border-t border-line">
+      <div className="flex items-center justify-between gap-6">
+        <div>
+          <p className="text-sm text-ink">Weekly newsletter</p>
+          <p className="text-xs text-ink-muted mt-0.5">Trip ideas, events and new guides, once a week.</p>
+        </div>
+        <Switch on={on} label="Weekly newsletter" disabled={saving || optedOut === null} onClick={toggle} />
+      </div>
+      {error && <div className="mt-4"><Status kind="error" message={error} /></div>}
+    </div>
+  );
+}
+
+function Switch({ on, label, disabled, onClick }: { on: boolean; label: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-60 ${on ? "bg-ink" : "bg-cream-deep border border-line"}`}
+    >
+      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${on ? "left-6" : "left-1"}`} />
+    </button>
   );
 }
 

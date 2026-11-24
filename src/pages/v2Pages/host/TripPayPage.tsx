@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Receipt } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, Receipt } from "lucide-react";
 import { tripClient } from "../../../dataStore/v2Api/client";
 import { paymentsApi } from "../../../dataStore/v2Api/hostApi";
 import { Button, FullPageSpinner } from "../../../components/v2Components/ui";
 import { FormError, PaymentStatusChip, SeatHoldCountdown } from "../../../components/v2Components/host/HostUi";
 import { TermsAcceptance } from "../../../components/v2Components/host/HostedTrip";
-import { formatNaira, formErrorText, trackHost } from "../../../utils/v2Utils/host";
+import InstalmentDatesPicker from "../../../components/v2Components/host/InstalmentDatesPicker";
+import { fieldErrors, formatNaira, formErrorText, trackHost } from "../../../utils/v2Utils/host";
+import { checkInstalmentDates, todayWat, type DateRow } from "../../../utils/v2Utils/hostSchedule";
 import { rememberCheckout } from "../../../utils/v2Utils/hostCheckout";
 import { receiptPath, tripPath } from "../../../utils/v2Utils/routes";
 import type { TripPost } from "../../../types";
@@ -20,6 +22,14 @@ const LINE_STATUS: Record<ScheduleLine["status"], string> = {
   Overdue: "text-red-700",
   Upcoming: "text-ink-muted",
 };
+
+// Unpaid instalments, for choosing or moving dates (paid ones keep theirs).
+// Before the traveller has chosen, the schedule shows the pay-in-full date, so start empty.
+function dateRowsFrom(balance: Balance): DateRow[] {
+  return balance.schedule
+    .filter(l => l.kind === "Instalment" && l.sequence != null && l.status !== "Paid")
+    .map(l => ({ sequence: l.sequence!, amountKobo: l.amountKobo, dueDate: balance.datesChosenByTraveller ? l.dueDate ?? "" : "" }));
+}
 
 async function fetchPayState(tripId: string) {
   const trip = await tripClient.getTrip(tripId);
@@ -39,14 +49,14 @@ export default function TripPayPage() {
   const [interestId, setInterestId] = useState<string | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
-  const [state, setState] = useState<"loading" | "ready" | "notApproved" | "error">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "notApproved" | "removed" | "error">("loading");
   const [error, setError] = useState("");
   const [paying, setPaying] = useState<CheckoutInput["kind"] | null>(null);
 
   const load = useCallback(() =>
     fetchPayState(id).then(r => {
       setTrip(r.trip);
-      if (!r.interestId || !r.balance) { setState("notApproved"); return; }
+      if (!r.interestId || !r.balance) { setState(r.trip.myInterestStatus === "Removed" ? "removed" : "notApproved"); return; }
       setInterestId(r.interestId);
       setBalance(r.balance);
       setReceipts(r.receipts);
@@ -86,7 +96,12 @@ export default function TripPayPage() {
     return (
       <div className="max-w-xl mx-auto px-5 py-12 space-y-6">
         {back}
-        {state === "notApproved"
+        {state === "removed"
+          ? <p className="text-ink-soft">
+              The host removed you from this trip for a missed payment, so there's nothing more to pay. Your receipts are
+              in <Link to="/payments" className="text-ink underline underline-offset-4">your payments</Link>.
+            </p>
+          : state === "notApproved"
           ? <p className="text-ink-soft">You can pay once the host has approved your request to join this trip.</p>
           : <FormError message={error || "Couldn't load your payments."} />}
       </div>
@@ -122,6 +137,7 @@ export default function TripPayPage() {
           </h2>
           <p className="text-sm text-ink-soft">Read these before you pay. They set out what's refunded if you or the host can't go.</p>
           <TermsAcceptance tripId={id} interestId={interestId} hostName={hostName}
+            dates={balance.instalmentDatesMode === "TravellerChooses" ? { rows: dateRowsFrom(balance), payInFullByDate: balance.payInFullByDate } : undefined}
             onAccepted={() => load().catch(() => setError("Couldn't refresh your payments."))} />
         </section>
       ) : next ? (
@@ -155,15 +171,27 @@ export default function TripPayPage() {
 
       <FormError message={error} />
 
+      {balance.canChangeDates && !needsTerms && (
+        <ChangeDates tripId={id} interestId={interestId} balance={balance} onSaved={setBalance} />
+      )}
+
       <section>
         <h2 className="text-xl font-normal text-ink mb-4">Payment schedule</h2>
+        {balance.instalmentDatesMode === "TravellerChooses" && balance.payInFullByDate && (
+          <p className="text-sm text-ink-soft -mt-2 mb-4">
+            {balance.datesChosenByTraveller ? "You chose these dates." : "You'll choose your dates when you accept the terms."}{" "}
+            Everything must be paid by {fmtDay(balance.payInFullByDate)}.
+          </p>
+        )}
         <div className="rounded-2xl border border-line bg-white divide-y divide-line">
           {balance.schedule.map(l => (
             <div key={`${l.kind}-${l.sequence ?? 0}`} className="flex items-center justify-between gap-4 px-5 py-4">
               <div>
                 <p className="text-ink">{l.kind === "Deposit" ? "Deposit" : `Instalment ${l.sequence}`}</p>
                 <p className="text-xs text-ink-muted">
-                  {l.kind === "Deposit" ? "To secure your seat" : l.dueDate ? `Due ${fmtDay(l.dueDate)}` : ""}
+                  {l.kind === "Deposit" ? "To secure your seat"
+                    : l.dueDate ? (balance.instalmentDatesMode === "TravellerChooses" && !balance.datesChosenByTraveller ? `By ${fmtDay(l.dueDate)}` : `Due ${fmtDay(l.dueDate)}`)
+                    : ""}
                   {l.paidKobo > 0 && l.paidKobo < l.amountKobo && ` · ${formatNaira(l.paidKobo)} paid`}
                 </p>
               </div>
@@ -200,5 +228,60 @@ export default function TripPayPage() {
         </section>
       )}
     </div>
+  );
+}
+
+// "Change my dates" (TravellerChooses, balance.canChangeDates): moves unpaid
+// instalments. The host is told, and reminders follow the new dates.
+function ChangeDates({ tripId, interestId, balance, onSaved }: {
+  tripId: string; interestId: string; balance: Balance; onSaved: (b: Balance) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<DateRow[]>(() => dateRowsFrom(balance));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    const local = checkInstalmentDates(rows, todayWat(), balance.payInFullByDate);
+    setErrors(local);
+    setError("");
+    if (Object.keys(local).length) return;
+    setBusy(true);
+    try {
+      const updated = await paymentsApi.changeInstalmentDates(tripId, interestId, rows.map(r => ({ sequence: r.sequence, dueDate: r.dueDate })));
+      trackHost("instalment_dates_changed");
+      onSaved(updated);
+      setOpen(false);
+    } catch (e) {
+      setErrors(fieldErrors(e));
+      setError(formErrorText(e, { 409: "These dates can't be changed any more. The trip may have been cancelled, or the host now sets the dates." }, "Couldn't save your dates."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="outline" onClick={() => { setRows(dateRowsFrom(balance)); setErrors({}); setOpen(true); }}>
+        <CalendarDays className="w-4 h-4" /> Change my dates
+      </Button>
+    );
+  }
+  return (
+    <section className="rounded-2xl border border-line bg-white p-6 space-y-4">
+      <div>
+        <h2 className="text-xl font-normal text-ink">Change my dates</h2>
+        <p className="text-sm text-ink-soft mt-1">
+          You can move instalments you haven't paid yet{balance.payInFullByDate ? `, up to ${fmtDay(balance.payInFullByDate)}` : ""}. The host will be told.
+        </p>
+      </div>
+      <InstalmentDatesPicker rows={rows} onChange={setRows} min={todayWat()} max={balance.payInFullByDate} errors={errors} />
+      <FormError message={error} />
+      <div className="flex gap-2">
+        <Button loading={busy} onClick={save}>Save dates</Button>
+        <Button variant="ghost" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button>
+      </div>
+    </section>
   );
 }

@@ -102,7 +102,7 @@ export default function ContactUsPage() {
                   <p className="text-xs font-bold uppercase tracking-widest text-purple-600 mb-1">
                     Email
                   </p>
-                  <p className="text-lg font-medium">hodrachq@gmail.com</p>
+                  <a href="mailto:support@hodrac.com" className="text-lg font-medium hover:underline underline-offset-4">support@hodrac.com</a>
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-purple-600 mb-1">

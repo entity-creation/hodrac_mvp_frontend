@@ -763,6 +763,7 @@ function StatusBadge({
     Approved: "bg-mint-100 text-mint-500 border-mint-500",
     Declined: "bg-cream-deep text-ink-soft border-line",
     Withdrawn: "bg-cream-deep text-ink-muted border-line",
+    Removed: "bg-red-50 text-red-700 border-red-200",
   };
 
   const labels: Record<string, string> = {
@@ -770,6 +771,7 @@ function StatusBadge({
     Approved: "Approved",
     Declined: "Declined",
     Withdrawn: "Withdrawn",
+    Removed: "Removed by host",
   };
 
   return (

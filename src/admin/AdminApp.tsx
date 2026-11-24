@@ -13,6 +13,7 @@ import OverviewPage from "./pages/OverviewPage";
 import InsightsPage from "./pages/InsightsPage";
 import UsersPage from "./pages/UsersPage";
 import NewsletterPage from "./pages/NewsletterPage";
+import NewsletterIssuePage from "./pages/NewsletterIssuePage";
 import TripsPage from "./pages/TripsPage";
 import PartnersPage from "./pages/PartnersPage";
 import LeadsPage from "./pages/LeadsPage";
@@ -241,6 +242,7 @@ export default function AdminApp() {
         <Route path="insights" element={<InsightsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="newsletter" element={<NewsletterPage />} />
+        <Route path="newsletter/:id" element={<NewsletterIssuePage />} />
         <Route path="trips" element={<TripsPage />} />
         <Route path="partners" element={<PartnersPage />} />
         <Route path="leads" element={<LeadsPage />} />

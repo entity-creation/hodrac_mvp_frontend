@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Download, ExternalLink, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, BarChart3, Download, ExternalLink, MessageCircle, Pencil, Plus, Trash2, UserX } from "lucide-react";
 import { tripClient } from "../../../dataStore/v2Api/client";
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { useManifestHub } from "../../../hooks/v2Hooks/useManifestHub";
 import { Button, FullPageSpinner, Modal } from "../../../components/v2Components/ui";
 import { FormError, HostField, PaymentStatusChip, SeatHoldCountdown } from "../../../components/v2Components/host/HostUi";
+import RemoveTravellerModal from "../../../components/v2Components/host/RemoveTravellerModal";
 import { inputClass } from "../../../components/v2Components/host/hostStyles";
 import { fieldErrors, formatNaira, formErrorText, trackHost } from "../../../utils/v2Utils/host";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
@@ -16,9 +17,8 @@ import type { Manifest, ManifestRow, ManualPayment, ManualPaymentMethod } from "
 type Filter = "all" | "owes" | "overdue" | "paid";
 
 const fmtDay = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
-const todayWat = () => new Date(Date.now() + 3_600_000).toISOString().slice(0, 10); // business days are WAT (UTC+1)
-
-const isOverdue = (r: ManifestRow) => r.owesKobo > 0 && !!r.nextDueDate && r.nextDueDate < todayWat();
+// The API works out overdue (unpaid instalments past due, WAT; never the deposit).
+const isOverdue = (r: ManifestRow) => r.overdueKobo > 0;
 
 // /host/trips/:id: who has paid, who owes, and what to chase. Live.
 export default function HostManifestPage() {
@@ -28,6 +28,7 @@ export default function HostManifestPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [toast, setToast] = useState("");
   const [recording, setRecording] = useState<ManifestRow | null>(null);
+  const [removing, setRemoving] = useState<ManifestRow | null>(null);
   const [csvBusy, setCsvBusy] = useState(false);
   const previous = useRef<Map<string, number>>(new Map());
 
@@ -95,6 +96,7 @@ export default function HostManifestPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" loading={csvBusy} onClick={downloadCsv}><Download className="w-4 h-4" /> Download CSV</Button>
+          <Link to={`${ROUTES.HOST.DASHBOARD}?tripId=${id}`} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm text-ink hover:border-ink"><BarChart3 className="w-4 h-4" /> Money</Link>
           <Link to={hostEditTripPath(id)} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm text-ink hover:border-ink"><Pencil className="w-4 h-4" /> Edit</Link>
           <a href={tripPath(id)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm text-ink hover:border-ink"><ExternalLink className="w-4 h-4" /> Trip page</a>
         </div>
@@ -102,7 +104,8 @@ export default function HostManifestPage() {
 
       <dl className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Total label="Seats paid in full" value={`${t.seatsPaidInFull} of ${seats || "—"}`} hint={`${t.seatsWithDeposit} with a deposit`} />
-        <Total label="Collected" value={formatNaira(t.paidKobo)} hint={`${formatNaira(t.owesKobo)} still owed`} />
+        <Total label="Collected" value={formatNaira(t.paidKobo)}
+          hint={`${formatNaira(t.owesKobo)} still owed${t.overdueKobo > 0 ? ` · ${formatNaira(t.overdueKobo)} overdue` : ""}`} />
         <Total label="Through Hodrac" value={viaShare != null ? `${viaShare}%` : "—"}
           hint="Payments recorded by hand aren't covered by receipts, terms evidence or reminders." />
         <Total label="Approved travellers" value={String(t.approved)} hint={`${t.travellers} on the list`} />
@@ -125,7 +128,7 @@ export default function HostManifestPage() {
         <ul className="space-y-3">
           {rows.map(r => (
             <ManifestRowCard key={r.interestId} tripId={id} row={r} termsVersion={manifest.termsVersion}
-              onChanged={() => refresh().catch(() => {})} onRecord={() => setRecording(r)} />
+              onChanged={() => refresh().catch(() => {})} onRecord={() => setRecording(r)} onRemove={() => setRemoving(r)} />
           ))}
         </ul>
       )}
@@ -134,6 +137,12 @@ export default function HostManifestPage() {
         <RecordPaymentModal tripId={id} row={recording} onClose={() => setRecording(null)}
           onChanged={() => refresh().catch(() => {})}
           onSaved={() => { setRecording(null); setToast("Payment recorded."); refresh().catch(() => {}); }} />
+      )}
+
+      {removing && (
+        <RemoveTravellerModal tripId={id} interestId={removing.interestId} travellerName={removing.travellerName}
+          onClose={() => setRemoving(null)}
+          onRemoved={() => { setToast(`${removing.travellerName} was removed. Their seat is free.`); setRemoving(null); refresh().catch(() => {}); }} />
       )}
 
       {toast && (
@@ -155,9 +164,9 @@ function Total({ label, value, hint }: { label: string; value: string; hint?: st
   );
 }
 
-function ManifestRowCard({ tripId, row: r, termsVersion, onChanged, onRecord }: {
+function ManifestRowCard({ tripId, row: r, termsVersion, onChanged, onRecord, onRemove }: {
   tripId: string; row: ManifestRow; termsVersion: number;
-  onChanged: () => void; onRecord: () => void;
+  onChanged: () => void; onRecord: () => void; onRemove: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -196,9 +205,15 @@ function ManifestRowCard({ tripId, row: r, termsVersion, onChanged, onRecord }: 
             <p className="text-ink font-medium">{r.travellerName}</p>
             {r.interestStatus === "Requested" ? <span className="rounded-full bg-cream-deep text-ink-soft text-xs px-2.5 py-0.5">Requested</span>
               : r.interestStatus === "Withdrawn" ? <span className="rounded-full bg-cream-deep text-ink-muted text-xs px-2.5 py-0.5">Withdrawn</span>
+              : r.interestStatus === "Removed" ? <span className="rounded-full bg-red-50 text-red-700 text-xs px-2.5 py-0.5">Removed</span>
               : <PaymentStatusChip status={r.paymentStatus} />}
-            {isOverdue(r) && <span className="rounded-full bg-red-50 text-red-700 text-xs px-2.5 py-0.5">Overdue</span>}
+            {isOverdue(r) && <span className="rounded-full bg-red-50 text-red-700 text-xs px-2.5 py-0.5">Overdue {formatNaira(r.overdueKobo)}</span>}
           </div>
+          {r.interestStatus === "Removed" && (
+            <p className="text-xs text-ink-muted mt-0.5">
+              Removed{r.removedAt ? ` ${new Date(r.removedAt).toLocaleDateString()}` : ""}{r.removedReason ? `: ${r.removedReason}` : "."}
+            </p>
+          )}
           <p className="text-sm text-ink-muted mt-0.5 break-all">{[r.phone, r.email].filter(Boolean).join(" · ") || "No contact details"}</p>
           {r.paymentStatus === "AwaitingDeposit" && r.seatHoldExpiresAt && <div className="mt-1"><SeatHoldCountdown until={r.seatHoldExpiresAt} /></div>}
         </div>
@@ -215,8 +230,11 @@ function ManifestRowCard({ tripId, row: r, termsVersion, onChanged, onRecord }: 
           {r.owesKobo > 0 && r.interestStatus === "Approved" && (
             <Button size="sm" variant="outline" onClick={nudge}><MessageCircle className="w-4 h-4" /> Remind on WhatsApp</Button>
           )}
-          {(r.interestStatus === "Approved" || r.interestStatus === "Withdrawn") && (
+          {(r.interestStatus === "Approved" || r.interestStatus === "Withdrawn" || r.interestStatus === "Removed") && (
             <Button size="sm" variant="ghost" onClick={onRecord}><Plus className="w-4 h-4" /> Record a payment</Button>
+          )}
+          {r.canRemove && (
+            <Button size="sm" variant="ghost" onClick={onRemove} className="text-red-700!"><UserX className="w-4 h-4" /> Remove traveller</Button>
           )}
         </div>
       </div>
@@ -225,7 +243,8 @@ function ManifestRowCard({ tripId, row: r, termsVersion, onChanged, onRecord }: 
         <dl className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
           <Cell label="Paid" value={formatNaira(r.paidKobo)} hint={r.manualKobo !== 0 ? `${formatNaira(r.manualKobo)} outside Hodrac` : undefined} />
           <Cell label="Owes" value={formatNaira(r.owesKobo)} />
-          <Cell label="Next due" value={r.nextDueDate ? `${fmtDay(r.nextDueDate)}${r.nextDueAmountKobo ? ` · ${formatNaira(r.nextDueAmountKobo)}` : ""}` : "—"} />
+          <Cell label="Next due" value={r.nextDueDate ? `${fmtDay(r.nextDueDate)}${r.nextDueAmountKobo ? ` · ${formatNaira(r.nextDueAmountKobo)}` : ""}` : "—"}
+            hint={r.datesChosenByTraveller ? "Their own dates" : undefined} />
           <Cell label="Terms" value={r.termsVersionAccepted ? `v${r.termsVersionAccepted}${r.termsVersionAccepted < termsVersion ? " (older)" : ""}` : "Not yet"}
             hint={r.termsAcceptedAt ? new Date(r.termsAcceptedAt).toLocaleDateString() : undefined} />
           <Cell label="Last reminder" value={r.lastReminderAt ? new Date(r.lastReminderAt).toLocaleDateString() : "—"} />

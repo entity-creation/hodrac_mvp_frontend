@@ -27,6 +27,8 @@ const NOTIFICATION_COPY: Record<NotificationType, { icon: string; text: string }
   SeatHoldExpiring: { icon: "⏳", text: "Your seat hold ends soon: pay the deposit to keep it" },
   SeatHoldExpired: { icon: "⌛", text: "A seat hold has expired" },
   DisputeOpened: { icon: "⚖️", text: "A payment on your trip was disputed" },
+  InstalmentDatesChanged: { icon: "🗓️", text: "A traveller changed their instalment dates" },
+  RemovedForMissedPayment: { icon: "🚫", text: "You were removed from a trip for a missed payment" },
 };
 
 // Where clicking a notification takes the user.
@@ -43,12 +45,14 @@ function notificationPath(n: TripNotification): string {
     case "PaymentReceived":
     case "HostedSeatWithdrawn":
     case "DisputeOpened":
+    case "InstalmentDatesChanged":
       return trip ? hostManifestPath(trip) : ROUTES.HOST.TRIPS;
     case "PaymentConfirmed":
     case "InstalmentDue":
     case "SeatHoldExpiring":
       return trip ? tripPayPath(trip) : "/trip-hub";
     case "SeatHoldExpired": // sent to both sides; the trip page suits either
+    case "RemovedForMissedPayment": // the trip page lets them request a seat again
       return trip ? tripPath(trip) : "/trip-hub";
   }
 

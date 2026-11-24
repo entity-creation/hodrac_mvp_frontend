@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Check, FileUp, Landmark, Plus, Send, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { hostApi } from "../../../dataStore/v2Api/hostApi";
 import { clearHostProfileCache } from "../../../hooks/v2Hooks/useHostProfile";
@@ -38,12 +38,15 @@ export default function HostOnboardingPage() {
   const [profile, setProfile] = useState<HostProfile | null>(null);
   const [step, setStep] = useState<Step | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [params] = useSearchParams();
+  // ?step=payout opens the payout account (payout settings) once it exists.
+  const wantPayout = params.get("step") === "payout";
 
   useEffect(() => {
     hostApi.myProfile()
-      .then(p => { setProfile(p); setStep(firstOpenStep(p)); })
+      .then(p => { setProfile(p); setStep(wantPayout && p ? 2 : firstOpenStep(p)); })
       .catch(e => setLoadError(formErrorText(e, {}, "Couldn't load your host profile.")));
-  }, []);
+  }, [wantPayout]);
 
   const advance = (p: HostProfile, from: Step) => {
     clearHostProfileCache();
@@ -92,7 +95,10 @@ export default function HostOnboardingPage() {
       </ol>
 
       {step === 1 && <ProfileStep profile={profile} onSaved={p => advance(p, 1)} />}
-      {step === 2 && profile && <PayoutStep profile={profile} onSaved={p => advance(p, 2)} />}
+      {step === 2 && profile && (
+        <PayoutStep profile={profile} onSaved={p => advance(p, 2)}
+          onChanged={p => { clearHostProfileCache(); setProfile(p); }} />
+      )}
       {step === 3 && profile && <VerificationStep profile={profile} onSaved={p => advance(p, 3)} />}
       {step === 4 && profile && <DoneStep profile={profile} />}
     </div>
@@ -189,7 +195,13 @@ function ProfileStep({ profile, onSaved }: { profile: HostProfile | null; onSave
 
 // ─── Step 2: payout account ───────────────────────────────────────────────────
 
-function PayoutStep({ profile, onSaved }: { profile: HostProfile; onSaved: (p: HostProfile) => void }) {
+const TOO_MANY = { 429: "Too many attempts, try again in a few minutes." };
+
+function PayoutStep({ profile, onSaved, onChanged }: {
+  profile: HostProfile;
+  onSaved: (p: HostProfile) => void;
+  onChanged: (p: HostProfile) => void;
+}) {
   const [editing, setEditing] = useState(!profile.payoutAccountSet);
   const [banks, setBanks] = useState<HostBank[] | null>(null);
   const [bankError, setBankError] = useState("");
@@ -197,9 +209,13 @@ function PayoutStep({ profile, onSaved }: { profile: HostProfile; onSaved: (p: H
   const [bankCode, setBankCode] = useState(profile.payoutAccount?.bankCode ?? "");
   const [accountNumber, setAccountNumber] = useState("");
   const [resolved, setResolved] = useState<PayoutAccountResult | null>(null);
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [changed, setChanged] = useState(false);
+  // Replacing an existing account needs the host's password.
+  const changing = profile.payoutAccountSet;
 
   useEffect(() => {
     if (!editing || banks) return;
@@ -227,21 +243,40 @@ function PayoutStep({ profile, onSaved }: { profile: HostProfile; onSaved: (p: H
       setResolved(await hostApi.payoutAccount(bankCode, digits));
     } catch (e) {
       setErrors(fieldErrors(e));
-      setFormError(formErrorText(e, {}, "Couldn't check that account."));
+      setFormError(formErrorText(e, TOO_MANY, "Couldn't check that account."));
     } finally {
       setBusy(false);
     }
   };
 
   const confirm = async () => {
+    if (changing && !password) {
+      setErrors({ password: "Enter your password to change your payout account." });
+      return;
+    }
     setBusy(true);
+    setErrors({});
     setFormError("");
     try {
-      const r = await hostApi.payoutAccount(bankCode, digits, true);
-      if (r.profile) onSaved(r.profile);
+      const r = await hostApi.payoutAccount(bankCode, digits, true, changing ? password : undefined);
+      if (!r.profile) return;
+      if (changing) {
+        // Stay here and show the new account rather than moving to the next step.
+        onChanged(r.profile);
+        setEditing(false);
+        setResolved(null);
+        setAccountNumber("");
+        setPassword("");
+        setChanged(true);
+      } else {
+        onSaved(r.profile);
+      }
     } catch (e) {
-      setErrors(fieldErrors(e));
-      setFormError(formErrorText(e, {}, "Couldn't save your payout account."));
+      const fe = fieldErrors(e);
+      setErrors(fe);
+      // A wrong password shows under the password field only.
+      const onlyPassword = Object.keys(fe).length === 1 && fe.password;
+      setFormError(onlyPassword ? "" : formErrorText(e, TOO_MANY, "Couldn't save your payout account."));
     } finally {
       setBusy(false);
     }
@@ -261,10 +296,11 @@ function PayoutStep({ profile, onSaved }: { profile: HostProfile; onSaved: (p: H
           <p className="text-sm text-ink-muted">Payouts go to</p>
           <p className="text-lg text-ink mt-1">{a.accountName}</p>
           <p className="text-ink-soft">{a.bankName} · ••••{a.accountLast4}</p>
+          {changed && <p className="text-sm text-palm mt-3 inline-flex items-center gap-1.5"><Check className="w-4 h-4" /> Payout account changed.</p>}
         </div>
         <div className="flex flex-wrap gap-3">
           <Button size="lg" onClick={() => onSaved(profile)}>Continue</Button>
-          <Button size="lg" variant="outline" onClick={() => setEditing(true)}>Change account</Button>
+          <Button size="lg" variant="outline" onClick={() => { setEditing(true); setChanged(false); }}>Change account</Button>
         </div>
       </section>
     );
@@ -293,9 +329,18 @@ function PayoutStep({ profile, onSaved }: { profile: HostProfile; onSaved: (p: H
           <p className="text-sm text-ink-muted">Is this you?</p>
           <p className="text-xl text-ink mt-1 font-medium">{resolved.accountName}</p>
           <p className="text-ink-soft">{resolved.bankName} · ••••{resolved.accountLast4}</p>
+          {changing && (
+            <div className="mt-5 max-w-sm">
+              <HostField label="Your Hodrac password *" hint="We ask for it whenever the payout account changes." error={errors.password}>
+                <input className={inputClass} type="password" autoComplete="current-password" value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !busy) confirm(); }} />
+              </HostField>
+            </div>
+          )}
           <div className="flex flex-wrap gap-3 mt-5">
             <Button loading={busy} onClick={confirm}>Yes, pay out to this account</Button>
-            <Button variant="ghost" onClick={() => setResolved(null)} disabled={busy}>No, change it</Button>
+            <Button variant="ghost" onClick={() => { setResolved(null); setPassword(""); }} disabled={busy}>No, change it</Button>
           </div>
         </div>
       )}

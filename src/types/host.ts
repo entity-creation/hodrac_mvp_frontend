@@ -7,6 +7,9 @@ export type Kobo = number;
 
 export type FeeMode = "PassToTraveller" | "HostAbsorbs";
 
+// Who sets the instalment due dates on a hosted trip.
+export type InstalmentDatesMode = "HostSet" | "TravellerChooses";
+
 export type InterestPaymentStatus =
   | "NotRequired"     // community trips
   | "AwaitingDeposit" // approved, seat held until seatHoldExpiresAt
@@ -34,8 +37,11 @@ export interface MyNextPayment {
 export interface TripInstalment {
   sequence: number; // 1, 2, 3…
   amountKobo: Kobo;
-  dueDate: string;  // yyyy-MM-dd
+  dueDate: string | null; // yyyy-MM-dd; null when travellers choose their dates
 }
+
+// A traveller's own date for one instalment (TravellerChooses trips).
+export interface InstalmentDate { sequence: number; dueDate: string }
 
 // The host block on a hosted trip (never payout or verification documents).
 export interface TripHost {
@@ -137,7 +143,7 @@ export interface ManifestRow {
   travellerName: string;
   email: string | null;
   phone: string | null;
-  interestStatus: "Requested" | "Approved" | "Withdrawn";
+  interestStatus: "Requested" | "Approved" | "Withdrawn" | "Removed";
   paymentStatus: InterestPaymentStatus;
   termsVersionAccepted: number | null;
   termsAcceptedAt: string | null;
@@ -150,6 +156,11 @@ export interface ManifestRow {
   seatHoldExpiresAt: string | null;
   lastReminderAt: string | null;
   requestedAt: string;
+  datesChosenByTraveller: boolean; // TravellerChooses trip and they've picked dates
+  canRemove: boolean;              // deposit paid and an instalment overdue
+  removedReason: string | null;    // Removed only
+  removedAt: string | null;
+  overdueKobo: Kobo;               // unpaid instalments past due (never the deposit)
 }
 
 export interface ManifestTotals {
@@ -161,6 +172,7 @@ export interface ManifestTotals {
   viaHodracKobo: Kobo;
   manualKobo: Kobo;
   owesKobo: Kobo;
+  overdueKobo: Kobo;
 }
 
 export interface Manifest {
@@ -199,6 +211,17 @@ export interface ManualPaymentResult {
   amountPaidViaHodracKobo: Kobo;
   paymentStatus: InterestPaymentStatus;
   seatHoldExpiresAt: string | null;
+}
+
+// POST /api/host/trips/{id}/travellers/{interestId}/remove
+export interface RemoveTravellerResult {
+  interestId: string;
+  interestStatus: "Removed";
+  paymentStatus: InterestPaymentStatus; // unchanged: payments are kept
+  amountPaidKobo: Kobo;
+  removedAt: string;
+  removedReason: string | null;
+  overdueInstalments: { sequence: number; dueDate: string; amountKobo: Kobo; remainingKobo: Kobo }[];
 }
 
 export interface WhatsAppNudge { url: string; phone: string; message: string }
@@ -244,6 +267,8 @@ export interface HostedTripFields {
   depositKobo?: Kobo | null;
   instalments?: TripInstalment[] | null;
   feeMode?: FeeMode | null;
+  instalmentDatesMode?: InstalmentDatesMode;
+  payInFullByDate?: string | null; // TravellerChooses only (400 on HostSet)
   seatHoldHours?: number | null;
   termsText?: string | null;
   inclusions?: string | null;
@@ -254,7 +279,12 @@ export interface HostedTripFields {
 
 export interface TripTerms { termsText: string; termsVersion: number; termsUpdatedAt: string | null }
 
-export interface AcceptTermsResult { termsVersionAccepted: number; termsAcceptedAt: string; termsTextSha256: string }
+export interface AcceptTermsResult {
+  termsVersionAccepted: number;
+  termsAcceptedAt: string;
+  termsTextSha256: string;
+  instalmentDates?: InstalmentDate[] | null; // TravellerChooses
+}
 
 export interface ScheduleLine {
   kind: "Deposit" | "Instalment";
@@ -284,6 +314,10 @@ export interface Balance {
   seatHoldExpiresAt: string | null;
   termsVersion: number;
   termsVersionAccepted: number | null;
+  instalmentDatesMode: InstalmentDatesMode;
+  payInFullByDate: string | null;   // TravellerChooses only
+  datesChosenByTraveller: boolean;  // otherwise the schedule shows payInFullByDate
+  canChangeDates: boolean;          // show "Change my dates"
 }
 
 export interface CheckoutInput { kind: SeatPaymentKind; instalmentSequence?: number | null }
@@ -313,3 +347,112 @@ export interface VerifyResult { status: SeatPaymentStatus; receipt: PaymentRecei
 
 // A traveller's request on a hosted trip, with its trip (from /mine/requests).
 export interface HostedRequestRef { interestId: string; status: TripInterestStatus; trip: TripPost }
+
+// ─── Host dashboard: all trips (/api/host/dashboard/…) ────────────────────────
+// Collected includes withdrawn and removed travellers (the money was received).
+// Owed and overdue count active seats on trips that aren't cancelled; a
+// deposit is never overdue.
+
+export type TripStatus = "Open" | "Closed" | "Cancelled";
+
+export interface HostDashboardFees {
+  hodracFeeTravellerPaidKobo: Kobo;
+  hodracFeeHostAbsorbedKobo: Kobo;
+  paystackFeeKobo: Kobo;
+  refundedViaHodracKobo: Kobo;
+  refundedManualKobo: Kobo;
+  refundedTotalKobo: Kobo;
+  estimatedNetToHostKobo: Kobo; // via Hodrac − absorbed Hodrac fee − Paystack fee; an estimate
+}
+
+export interface HostDashboardMonth { month: string; viaHodracKobo: Kobo; manualKobo: Kobo; totalKobo: Kobo }
+
+export interface HostDashboardSummary {
+  trips: number;
+  seatsTotal: number;
+  seatsSold: number;
+  seatsWithDeposit: number;
+  seatsPaidInFull: number;
+  collectedViaHodracKobo: Kobo;
+  collectedManualKobo: Kobo;
+  collectedTotalKobo: Kobo;
+  owedKobo: Kobo;
+  overdueKobo: Kobo;
+  overdueTravellers: number;
+  fees: HostDashboardFees;
+  paidFrom: string; // chart period, yyyy-MM-dd
+  paidTo: string;
+  timeZone: string; // "WAT"
+  monthly: HostDashboardMonth[];
+}
+
+export interface HostDashboardTrip extends HostTripSummary {
+  locationLabel: string;
+  destinationId: string | null;
+  wishlistId: string | null;
+  destinationIds: string[];
+  currency: string;
+  feeMode: FeeMode;
+  instalmentDatesMode: InstalmentDatesMode;
+  overdueKobo: Kobo;
+  overdueTravellers: number;
+  nextDueDate: string | null;
+  fees: HostDashboardFees;
+}
+
+export interface HostDashboardTraveller {
+  tripId: string;
+  tripTitle: string;
+  tripStartDate: string | null;
+  tripStatus: TripStatus;
+  interestId: string;
+  travellerUserId: string;
+  travellerName: string;
+  email: string | null;
+  phone: string | null;
+  interestStatus: ManifestRow["interestStatus"];
+  paymentStatus: InterestPaymentStatus;
+  paidKobo: Kobo;
+  viaHodracKobo: Kobo;
+  manualKobo: Kobo;
+  owesKobo: Kobo;
+  nextDueDate: string | null;
+  nextDueAmountKobo: Kobo | null;
+  nextDueKind: "Deposit" | "Instalment" | null;
+  overdueKobo: Kobo;
+  overdueInstalments: number;
+  daysOverdue: number | null;
+  seatHoldExpiresAt: string | null;
+  lastReminderAt: string | null;
+  instalmentDatesMode: InstalmentDatesMode;
+  datesChosenByTraveller: boolean;
+  canRemove: boolean;
+  removedReason: string | null;
+  removedAt: string | null;
+  requestedAt: string;
+}
+
+// Filters shared by every dashboard endpoint (all optional).
+export interface HostDashboardFilters {
+  tripId?: string;
+  status?: TripStatus;
+  upcoming?: boolean;
+  destinationId?: string;
+  cityId?: string;
+  countryId?: string;
+  startFrom?: string; // yyyy-MM-dd
+  startTo?: string;
+  search?: string;
+}
+
+export type HostDashboardTripSort = "startDate" | "owed" | "overdue" | "collected";
+export type HostDashboardTravellerSort = "nextDueDate" | "owes" | "overdue";
+
+export interface HostDashboardTravellerFilters extends HostDashboardFilters {
+  paymentStatus?: InterestPaymentStatus;
+  interestStatus?: ManifestRow["interestStatus"];
+  owing?: boolean;
+  overdue?: boolean;
+}
+
+export interface HostPaged<T> { items: T[]; page: number; pageSize: number; totalCount: number }

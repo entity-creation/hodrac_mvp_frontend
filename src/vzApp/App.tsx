@@ -18,6 +18,7 @@ const ReceiptsPage       = lazy(() => import("../pages/v2Pages/host/ReceiptsPage
 const HostTripsPage      = lazy(() => import("../pages/v2Pages/host/HostTripsPage"));
 const HostManifestPage   = lazy(() => import("../pages/v2Pages/host/HostManifestPage"));
 const HostReportsPage    = lazy(() => import("../pages/v2Pages/host/HostReportsPage"));
+const HostDashboardPage  = lazy(() => import("../pages/v2Pages/host/HostDashboardPage"));
 const host = (page: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{page}</Suspense>;
 
 // Layout
@@ -170,6 +171,7 @@ export default function App() {
               {HOST_ENABLED && <Route path="/host/trips/new" element={host(<HostTripFormPage />)} />}
               {HOST_ENABLED && <Route path="/host/trips/:id" element={host(<HostManifestPage />)} />}
               {HOST_ENABLED && <Route path="/host/reports" element={host(<HostReportsPage />)} />}
+              {HOST_ENABLED && <Route path="/host/dashboard" element={host(<HostDashboardPage />)} />}
               {HOST_ENABLED && <Route path="/host/trips/:id/edit" element={host(<HostTripFormPage />)} />}
               {HOST_ENABLED && <Route path="/trips/:id/pay" element={host(<TripPayPage />)} />}
               {HOST_ENABLED && <Route path="/trips/payment/callback" element={host(<PaymentCallbackPage />)} />}

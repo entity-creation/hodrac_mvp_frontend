@@ -8,7 +8,9 @@ import { useRequireAuth } from "../../../hooks/v2Hooks/useRequireAuth";
 import { Button, Modal } from "../ui";
 import { FormError, PaymentStatusChip, SeatHoldCountdown, VerifiedBadge } from "./HostUi";
 import { inputClass } from "./hostStyles";
-import { formatNaira, formErrorText, trackHost } from "../../../utils/v2Utils/host";
+import InstalmentDatesPicker from "./InstalmentDatesPicker";
+import { fieldErrors, formatNaira, formErrorText, trackHost } from "../../../utils/v2Utils/host";
+import { checkInstalmentDates, todayWat, type DateRow } from "../../../utils/v2Utils/hostSchedule";
 import { tripCapacity } from "../../../utils/v2Utils/trips";
 import { friendlyError, TRIP_CONFLICTS } from "../../../utils/v2Utils/apiErrors";
 import { hostEditTripPath, hostManifestPath, tripPayPath } from "../../../utils/v2Utils/routes";
@@ -59,7 +61,10 @@ export function HostedPriceBox({ trip }: { trip: TripPost }) {
           <li key={i.sequence} className="pl-5 relative">
             <span className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full border-2 border-ink bg-white" />
             <p className="text-sm text-ink"><span className="font-medium">{formatNaira(i.amountKobo)}</span> instalment {i.sequence}</p>
-            <p className="text-xs text-ink-muted">Due {fmtDay(i.dueDate)}</p>
+            <p className="text-xs text-ink-muted">
+              {i.dueDate ? `Due ${fmtDay(i.dueDate)}`
+                : trip.payInFullByDate ? `You choose the date, by ${fmtDay(trip.payInFullByDate)}` : "You choose the date"}
+            </p>
           </li>
         ))}
       </ol>
@@ -257,12 +262,29 @@ export function HostedJoinPanel({ trip, isAuthor, onTripChange }: {
 
       {status === "Declined" && <p className="text-sm text-ink-soft">{hostName} declined your request for this trip.</p>}
 
-      {!status && (
+      {status === "Removed" && (
+        <>
+          <p className="text-ink font-medium">You were removed from this trip</p>
+          <p className="text-sm text-ink-soft">
+            {hostName} removed you for a missed payment. What you paid stays with the host under their terms; contact them about any refund.
+          </p>
+          {paid > 0 && (
+            <Link to="/payments" className="text-sm text-ink underline underline-offset-4">See your receipts</Link>
+          )}
+        </>
+      )}
+
+      {(!status || status === "Removed") && (
+        status === "Removed" && !open ? null :
         !open ? <p className="text-sm text-ink-soft">This trip is {trip.status.toLowerCase()} and isn't taking new travellers.</p>
         : capacity.isFull ? <p className="text-ink font-medium">Sold out</p>
         : (
           <>
-            <p className="text-sm text-ink-soft">Request a seat. Once {hostName} approves, you'll accept their terms and pay the deposit.</p>
+            <p className="text-sm text-ink-soft">
+              {status === "Removed"
+                ? `You can ask to join again. ${hostName} will decide whether to approve you.`
+                : `Request a seat. Once ${hostName} approves, you'll accept their terms and pay the deposit.`}
+            </p>
             {isAuthenticated && (
               <label className="block">
                 <span className="flex items-center gap-1.5 text-sm text-ink mb-1.5"><Phone className="w-3.5 h-3.5" /> Phone number (optional)</span>
@@ -271,7 +293,7 @@ export function HostedJoinPanel({ trip, isAuthor, onTripChange }: {
               </label>
             )}
             <Button fullWidth size="lg" loading={busy} onClick={request}>
-              {isAuthenticated ? "Request to join" : "Sign in to request a seat"}
+              {!isAuthenticated ? "Sign in to request a seat" : status === "Removed" ? "Send a new request" : "Request to join"}
             </Button>
           </>
         )
@@ -287,14 +309,20 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 // The host's terms with an explicit acceptance; reloads if they changed.
-export function TermsAcceptance({ tripId, interestId, hostName, onAccepted }: {
+// On TravellerChooses trips, `dates` holds the unpaid instalments: the
+// traveller picks a date for each, sent with the acceptance.
+export function TermsAcceptance({ tripId, interestId, hostName, onAccepted, dates }: {
   tripId: string; interestId: string; hostName: string; onAccepted: () => void;
+  dates?: { rows: DateRow[]; payInFullByDate: string | null };
 }) {
   const [terms, setTerms] = useState<TripTerms | null>(null);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [dateRows, setDateRows] = useState<DateRow[]>(dates?.rows ?? []);
+  const [dateErrors, setDateErrors] = useState<Record<string, string>>({});
+  const choosingDates = dateRows.length > 0;
 
   const load = useCallback(() => paymentsApi.terms(tripId).then(setTerms), [tripId]);
 
@@ -304,10 +332,16 @@ export function TermsAcceptance({ tripId, interestId, hostName, onAccepted }: {
 
   const accept = async () => {
     if (!terms) return;
-    setBusy(true);
     setError("");
+    if (choosingDates) {
+      const local = checkInstalmentDates(dateRows, todayWat(), dates?.payInFullByDate ?? null);
+      setDateErrors(local);
+      if (Object.keys(local).length) return;
+    }
+    setBusy(true);
     try {
-      await paymentsApi.acceptTerms(tripId, interestId, terms.termsVersion);
+      await paymentsApi.acceptTerms(tripId, interestId, terms.termsVersion,
+        choosingDates ? dateRows.map(r => ({ sequence: r.sequence, dueDate: r.dueDate })) : undefined);
       trackHost("terms_accepted", { version: terms.termsVersion });
       onAccepted();
     } catch (e) {
@@ -316,6 +350,7 @@ export function TermsAcceptance({ tripId, interestId, hostName, onAccepted }: {
         setChecked(false);
         setNotice("The host updated the terms since you opened them. Please read the latest version.");
       } else {
+        setDateErrors(fieldErrors(e));
         setError(formErrorText(e, {}, "Couldn't record your acceptance."));
       }
     } finally {
@@ -331,12 +366,25 @@ export function TermsAcceptance({ tripId, interestId, hostName, onAccepted }: {
       <div className="max-h-80 overflow-y-auto rounded-2xl border border-line bg-cream p-5 whitespace-pre-line text-sm text-ink-soft leading-relaxed" tabIndex={0}>
         {terms.termsText}
       </div>
+      {choosingDates && (
+        <div className="rounded-2xl border border-line p-5 space-y-3">
+          <div>
+            <p className="text-ink font-medium">Choose your payment dates</p>
+            <p className="text-sm text-ink-soft mt-1">
+              {hostName} lets you pick when to pay each instalment
+              {dates?.payInFullByDate ? <>, as long as everything is paid by {fmtDay(dates.payInFullByDate)}</> : null}.
+              Dates must be in order. We'll remind you before each one.
+            </p>
+          </div>
+          <InstalmentDatesPicker rows={dateRows} onChange={setDateRows} min={todayWat()} max={dates?.payInFullByDate ?? null} errors={dateErrors} />
+        </div>
+      )}
       <label className="flex items-start gap-3 text-sm text-ink cursor-pointer">
         <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-0.5 w-4 h-4 accent-ink" />
         <span>I have read and accept {hostName}'s refund and dropout terms (version {terms.termsVersion}).</span>
       </label>
       <FormError message={error} />
-      <Button size="lg" disabled={!checked} loading={busy} onClick={accept}>Accept terms</Button>
+      <Button size="lg" disabled={!checked} loading={busy} onClick={accept}>{choosingDates ? "Accept terms and save dates" : "Accept terms"}</Button>
     </div>
   );
 }
