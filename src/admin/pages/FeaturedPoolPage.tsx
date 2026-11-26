@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
+import { isApiError } from "../../dataStore/v2Api/client";
+import { friendlyError } from "../../utils/v2Utils/apiErrors";
 import { adminApi, enumName, POOL_TYPES, type AdminFeaturedPoolEntry, type AdminHero, type FeaturedPoolInput, type PoolType } from "../api";
 import {
   AdminPage, Btn, Check, ConfirmBtn, DataTable, Drawer, ErrorBlock, Field, LoadingBlock, NumberInput, Panel, Pill, Select,
   TextInput, Toolbar, type Column,
 } from "../ui";
-import { useAction, useQuery } from "../hooks";
+import { useAction, useQuery, useToast } from "../hooks";
 import { fmtDate, fmtDateTime, fmtNumber, fmtUsd, fromLocalInput, toLocalInput } from "../format";
 import { WishlistPicker, type PickedRef } from "./PartnersPage";
 
@@ -15,7 +17,7 @@ const typeOf = (e: AdminFeaturedPoolEntry) => enumName(e.poolType, POOL_TYPES);
 const TYPE_TONE: Record<PoolType, "info" | "good" | "warn"> = { Editorial: "info", Paid: "good", Random: "warn" };
 
 const TYPE_HINT: Record<PoolType, string> = {
-  Editorial: "Hand-picked by the team. No extra settings.",
+  Editorial: "Hand-picked by the team. New picks go to the end of the editorial order; reorder them under the Editorial filter.",
   Paid: "Sponsored placement, capped by a daily impression limit.",
   Random: "Rotated in at random, weighted by its selection weight.",
 };
@@ -169,7 +171,11 @@ function EntryDrawer({ entry, onClose, onSaved }: { entry: AdminFeaturedPoolEntr
 
   const remove = async () => {
     if (!entry) return;
-    const r = await del.run(() => adminApi.featuredPool.remove(entry.featuredWishlistPoolId), { success: "Removed from the featured pool.", errors });
+    // A 404 means it's already gone (e.g. unfeaturing removed it), which is what we wanted.
+    const r = await del.run(async () => {
+      try { await adminApi.featuredPool.remove(entry.featuredWishlistPoolId); }
+      catch (e) { if (!isApiError(e, 404)) throw e; }
+    }, { success: "Removed from the featured pool." });
     if (r.ok) onSaved();
   };
 
@@ -213,10 +219,89 @@ function EntryDrawer({ entry, onClose, onSaved }: { entry: AdminFeaturedPoolEntr
   );
 }
 
+// ─── Editorial order ──────────────────────────────────────────────────────────
+
+// Editorial picks show to visitors in this order. Drag a row (or use the
+// arrows) and the whole new order is saved straight away.
+function EditorialList({ version, onOpen, onReordered }: {
+  version: number; onOpen: (e: AdminFeaturedPoolEntry) => void; onReordered: () => void;
+}) {
+  const notify = useToast();
+  const { data, setData, loading, error, reload } = useQuery(() => adminApi.featuredPool.list("Editorial"), [version]);
+  const [pending, setPending] = useState<AdminFeaturedPoolEntry[] | null>(null); // shown while saving
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const rows = pending ?? data ?? [];
+
+  const save = async (next: AdminFeaturedPoolEntry[]) => {
+    setPending(next);
+    setSaving(true);
+    try {
+      setData(await adminApi.featuredPool.reorderEditorial(next.map(e => e.featuredWishlistPoolId)));
+      notify("Order saved.");
+      onReordered();
+    } catch (e) {
+      if (isApiError(e, 400)) {
+        notify("The Editorial list changed while you were reordering, so it's been reloaded. Try again.", "error");
+        reload();
+        onReordered(); // the counts above may have changed too
+      } else {
+        notify(friendlyError(e, {}, "Couldn't save the order."), "error");
+      }
+    } finally {
+      setPending(null);
+      setSaving(false);
+    }
+  };
+
+  const move = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= rows.length) return;
+    const next = [...rows];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    void save(next);
+  };
+
+  const endDrag = () => { setDragFrom(null); setDropAt(null); };
+
+  if (error) return <ErrorBlock message={error} onRetry={reload} />;
+  if (loading && !data) return <LoadingBlock />;
+  if (!rows.length) return <p className="text-sm text-ink-muted py-8 text-center border border-dashed border-line rounded-2xl">No editorial picks yet. Featuring a wishlist adds it here.</p>;
+
+  return (
+    <div>
+      <p className="text-sm text-ink-soft mb-3">Visitors see editorial picks in this order. Drag a row to move it; the new order saves straight away.</p>
+      <ol className={`bg-white border border-line rounded-2xl divide-y divide-line ${saving ? "opacity-70" : ""}`} aria-busy={saving}>
+        {rows.map((e, i) => (
+          <li key={e.featuredWishlistPoolId}
+            draggable={!saving}
+            onDragStart={ev => { setDragFrom(i); ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", e.featuredWishlistPoolId); }}
+            onDragOver={ev => { if (dragFrom === null) return; ev.preventDefault(); setDropAt(i); }}
+            onDrop={ev => { ev.preventDefault(); if (dragFrom !== null) move(dragFrom, i); endDrag(); }}
+            onDragEnd={endDrag}
+            className={`flex items-center gap-3 px-4 py-3 transition-colors ${dragFrom === i ? "opacity-40" : ""} ${
+              dropAt === i && dragFrom !== null && dragFrom !== i ? (dragFrom < i ? "shadow-[inset_0_-2px_0_var(--color-ink)]" : "shadow-[inset_0_2px_0_var(--color-ink)]") : ""}`}>
+            <GripVertical className="w-4 h-4 text-ink-muted shrink-0 cursor-grab active:cursor-grabbing" aria-hidden />
+            <span className="w-6 text-right text-sm text-ink-muted tabular-nums shrink-0">{i + 1}</span>
+            <button type="button" onClick={() => onOpen(e)} className="flex-1 min-w-0 text-left text-ink truncate hover:underline underline-offset-4">
+              {e.wishlistName}
+            </button>
+            <Btn size="sm" variant="ghost" aria-label={`Move ${e.wishlistName} up`} disabled={i === 0 || saving} onClick={() => move(i, i - 1)}><ArrowUp className="w-3.5 h-3.5" /></Btn>
+            <Btn size="sm" variant="ghost" aria-label={`Move ${e.wishlistName} down`} disabled={i === rows.length - 1 || saving} onClick={() => move(i, i + 1)}><ArrowDown className="w-3.5 h-3.5" /></Btn>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export default function FeaturedPoolPage() {
   const { data, loading, error, reload } = useQuery(() => adminApi.featuredPool.list(), []);
   const [filter, setFilter] = useState<"" | PoolType>("");
   const [drawer, setDrawer] = useState<{ entry: AdminFeaturedPoolEntry | null } | null>(null);
+  const [version, setVersion] = useState(0);
 
   const counts = useMemo(() => {
     const c: Record<PoolType, number> = { Editorial: 0, Paid: 0, Random: 0 };
@@ -224,15 +309,12 @@ export default function FeaturedPoolPage() {
     return c;
   }, [data]);
 
-  const rows = useMemo(
-    () => (data ?? [])
-      .filter(e => !filter || typeOf(e) === filter)
-      .sort((a, b) => POOL_TYPES.indexOf(typeOf(a)) - POOL_TYPES.indexOf(typeOf(b)) || a.wishlistName.localeCompare(b.wishlistName)),
-    [data, filter]
-  );
+  // The server returns Editorial first, in its display order, then Paid and Random.
+  const rows = useMemo(() => (data ?? []).filter(e => !filter || typeOf(e) === filter), [data, filter]);
 
   const columns: Column<AdminFeaturedPoolEntry>[] = [
     { key: "name", header: "Wishlist", render: e => <span className="text-ink">{e.wishlistName}</span> },
+    { key: "order", header: "Editorial #", className: "text-right", render: e => (e.editorialOrder == null ? dash : e.editorialOrder) },
     { key: "type", header: "Pool", render: e => <Pill tone={TYPE_TONE[typeOf(e)]}>{typeOf(e)}</Pill> },
     { key: "paid", header: "Paid", render: e => (e.paidAmount == null ? dash : fmtUsd(e.paidAmount)), className: "text-right" },
     { key: "limit", header: "Daily limit", render: e => (e.dailyImpressionLimit == null ? dash : fmtNumber(e.dailyImpressionLimit)), className: "text-right" },
@@ -262,7 +344,9 @@ export default function FeaturedPoolPage() {
         </div>
       </Toolbar>
 
-      {error ? (
+      {filter === "Editorial" ? (
+        <EditorialList version={version} onOpen={e => setDrawer({ entry: e })} onReordered={reload} />
+      ) : error ? (
         <ErrorBlock message={error} onRetry={reload} />
       ) : (
         <DataTable columns={columns} rows={rows} rowKey={e => e.featuredWishlistPoolId} loading={loading}
@@ -272,7 +356,7 @@ export default function FeaturedPoolPage() {
 
       {drawer && (
         <EntryDrawer key={drawer.entry?.featuredWishlistPoolId ?? "new"} entry={drawer.entry}
-          onClose={() => setDrawer(null)} onSaved={() => { setDrawer(null); reload(); }} />
+          onClose={() => setDrawer(null)} onSaved={() => { setDrawer(null); reload(); setVersion(v => v + 1); }} />
       )}
     </AdminPage>
   );

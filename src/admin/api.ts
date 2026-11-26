@@ -324,6 +324,7 @@ export interface AdminWishlistSummary {
   totalGlobalSaveCount: number;
   isFeatured: boolean;
   featuredUntil: string | null;
+  isCurrentlyFeatured?: boolean; // false once featuredUntil has passed
   destinationCount: number;
   forkCount: number;
   partnerLinkCount: number;
@@ -401,6 +402,7 @@ export interface AdminFeaturedPoolEntry {
   currentImpressionsToday: number;
   randomSelectionWeight: number | null;
   lastRotationDate: string | null;
+  editorialOrder?: number | null; // 1, 2, 3… for Editorial entries; null otherwise
 }
 export interface FeaturedPoolInput {
   wishlistId?: string;
@@ -476,6 +478,7 @@ export interface AdminWishlistDetail {
   itineraryDays: AdminItineraryDay[];
   attributions: AdminAttribution[];
   featuredPoolEntries: AdminFeaturedPoolEntry[];
+  isCurrentlyFeatured?: boolean; // false once featuredUntil has passed
 }
 
 export interface WishlistInput {
@@ -940,7 +943,11 @@ export const adminApi = {
   },
 
   featuredPool: {
-    list: () => http.get<AdminFeaturedPoolEntry[]>(`${A}/featured-pool`),
+    list: (poolType?: PoolType) => http.get<AdminFeaturedPoolEntry[]>(`${A}/featured-pool${qs({ poolType })}`),
+    // Every Editorial entry's id, once each, in the new order. 400 = the list
+    // changed meanwhile (an entry is missing or extra): reload it.
+    reorderEditorial: (entryIds: string[]) =>
+      http.put<AdminFeaturedPoolEntry[]>(`${A}/featured-pool/editorial/order`, { entryIds }),
     // poolType is a plain string ("Editorial" | "Paid" | "Random").
     create: (body: FeaturedPoolInput) => http.post<AdminFeaturedPoolEntry>(`${A}/featured-pool`, body),
     update: (id: string, body: FeaturedPoolInput) => http.patch<AdminFeaturedPoolEntry>(`${A}/featured-pool/${id}`, body),

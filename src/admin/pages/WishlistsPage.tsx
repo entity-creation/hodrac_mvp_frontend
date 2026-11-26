@@ -20,6 +20,11 @@ import { WishlistAudiencePanel } from "../insightsUi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Featured, but its "featured until" date has passed (the server's
+// isCurrentlyFeatured is false), so visitors no longer see it as featured.
+const featureExpired = (w: { isFeatured: boolean; isCurrentlyFeatured?: boolean }) =>
+  w.isFeatured && w.isCurrentlyFeatured === false;
+
 function changedFields<T extends object>(next: T, prev: T): Partial<T> {
   const out: Partial<T> = {};
   for (const k of Object.keys(next) as (keyof T)[]) {
@@ -82,8 +87,8 @@ export default function WishlistsPage() {
       key: "featured", header: "Featured",
       render: w => w.isFeatured ? (
         <div className="flex flex-col gap-0.5">
-          <Pill tone="info">Featured</Pill>
-          {w.featuredUntil && <span className="text-[11px] text-ink-muted whitespace-nowrap">until {fmtDate(w.featuredUntil)}</span>}
+          {featureExpired(w) ? <Pill tone="warn">Expired</Pill> : <Pill tone="info">Featured</Pill>}
+          {w.featuredUntil && <span className="text-[11px] text-ink-muted whitespace-nowrap">{featureExpired(w) ? "ended" : "until"} {fmtDate(w.featuredUntil)}</span>}
         </div>
       ) : <span className="text-ink-muted">—</span>,
     },
@@ -166,7 +171,9 @@ function WishlistEditor({ id, onChanged, onDeleted }: { id: string; onChanged: (
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-light text-ink truncate">{d.wishlistName}</h3>
           <div className="flex flex-wrap gap-1.5 mt-1">
-            {d.isFeatured && <Pill tone="info">Featured{d.featuredUntil ? ` until ${fmtDate(d.featuredUntil)}` : ""}</Pill>}
+            {d.isFeatured && (featureExpired(d)
+              ? <Pill tone="warn">Featuring ended {d.featuredUntil ? fmtDate(d.featuredUntil) : ""}</Pill>
+              : <Pill tone="info">Featured{d.featuredUntil ? ` until ${fmtDate(d.featuredUntil)}` : ""}</Pill>)}
             <Pill>{fmtNumber(d.totalGlobalSaveCount)} saves</Pill>
             <Pill>{fmtNumber(d.forkCount)} forks</Pill>
             <Pill>{fmtNumber(d.tripPostCount)} trips</Pill>
@@ -781,11 +788,26 @@ function FeaturingTab({ detail, onChanged }: { detail: AdminWishlistDetail; onCh
   const act = useAction();
   const wid = detail.wishlistId;
 
+  const inEditorial = detail.featuredPoolEntries.some(p => enumName(p.poolType, POOL_TYPES) === "Editorial");
+  const expired = featureExpired(detail);
+
+  // Featuring also puts the template in the Editorial pool (at the end of its
+  // order) if it isn't there yet. Unfeature removes that entry on the server.
   const feature = async () => {
-    const r = await act.run(() => adminApi.wishlists.feature(wid, fromLocalInput(until)), {
-      success: detail.isFeatured ? "Featuring updated" : "Template featured", errors: { 404: GONE },
+    await act.run(async () => {
+      await adminApi.wishlists.feature(wid, fromLocalInput(until));
+      if (!inEditorial) {
+        try {
+          await adminApi.featuredPool.create({ wishlistId: wid, poolType: "Editorial" });
+        } catch (e) {
+          if (!isApiError(e, 409)) throw new Error("Featured, but couldn't add it to the Editorial list. Add it on the Featured pool page.");
+        }
+      }
+    }, {
+      success: detail.isFeatured ? "Featuring updated" : "Template featured and added to the Editorial list", errors: { 404: GONE },
     });
-    if (r.ok) onChanged();
+    // Reload either way: featuring may have worked before the pool step failed.
+    onChanged();
   };
   const unfeature = async () => {
     const r = await act.run(() => adminApi.wishlists.unfeature(wid), { success: "Template unfeatured", errors: { 404: GONE } });
@@ -795,9 +817,15 @@ function FeaturingTab({ detail, onChanged }: { detail: AdminWishlistDetail; onCh
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-line p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          {detail.isFeatured ? <Pill tone="info">Featured</Pill> : <Pill>Not featured</Pill>}
-          {detail.isFeatured && <span className="text-sm text-ink-soft">{detail.featuredUntil ? `until ${fmtDateTime(detail.featuredUntil)}` : "with no end date"}</span>}
+        <div className="flex flex-wrap items-center gap-2">
+          {!detail.isFeatured ? <Pill>Not featured</Pill> : expired ? <Pill tone="warn">Expired</Pill> : <Pill tone="info">Featured</Pill>}
+          {detail.isFeatured && (
+            <span className="text-sm text-ink-soft">
+              {expired
+                ? `Ended ${fmtDateTime(detail.featuredUntil)}. Visitors no longer see it as featured; set a new date or unfeature it.`
+                : detail.featuredUntil ? `until ${fmtDateTime(detail.featuredUntil)}` : "with no end date"}
+            </span>
+          )}
         </div>
         <Field label="Featured until" hint="Leave empty to feature with no end date.">
           <div className="flex items-center gap-2">
